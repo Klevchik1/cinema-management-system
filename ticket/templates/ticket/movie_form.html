@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if form.instance.id %}Редактирование{% else %}Добавление{% endif %} фильма</title>
+    <style>
+        .poster-preview {
+            max-width: 300px;
+            max-height: 400px;
+            margin: 15px 0;
+            border: 2px solid #ffcc00;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>{% if form.instance.id %}Редактирование фильма{% else %}Новый фильм{% endif %}</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="id_title">Название</label>
+            {{ form.title }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_description">Описание</label>
+            {{ form.description }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_duration">Длительность</label>
+            {{ form.duration }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_genre">Жанр</label>
+            {{ form.genre }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_poster">Постер фильма</label>
+            {{ form.poster }}
+            {% if form.instance.poster %}
+                <img
+                    id="poster-preview"
+                    class="poster-preview"
+                    src="{{ form.instance.poster.url }}"
+                    alt="Текущий постер"
+                >
+            {% else %}
+                <img
+                    id="poster-preview"
+                    class="poster-preview"
+                    src=""
+                    alt="Предпросмотр постера"
+                >
+            {% endif %}
+        </div>
+
+        <button type="submit">Сохранить</button>
+    </form>
+
+    <a href="{% url 'movie_manage' %}">Назад к списку</a>
+
+    <script>
+        // Скрипт для предпросмотра постера перед загрузкой
+        document.getElementById('id_poster').addEventListener('change', function(e) {
+            const preview = document.getElementById('poster-preview');
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Показываем текущий постер при загрузке страницы
+        window.addEventListener('DOMContentLoaded', function() {
+            const preview = document.getElementById('poster-preview');
+            if (preview.src) {
+                preview.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

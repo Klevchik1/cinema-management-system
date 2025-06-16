@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if form.instance.id %}Редактирование{% else %}Добавление{% endif %} сеанса</title>
+</head>
+<body>
+    <h1>{% if form.instance.id %}Редактирование сеанса{% else %}Новый сеанс{% endif %}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        {% if form.instance.id %}
+            <p><strong>Окончание сеанса:</strong> {{ form.instance.end_time }}</p>
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <button type="submit">Сохранить</button>
+    </form>
+
+    <a href="{% url 'screening_manage' %}">Назад к списку</a>
+</body>
+</html>

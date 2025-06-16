@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if form.instance.id %}Редактирование{% else %}Добавление{% endif %} зала</title>
+</head>
+<body>
+    <h1>{% if form.instance.id %}Редактирование зала{% else %}Новый зал{% endif %}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Сохранить</button>
+    </form>
+
+    <a href="{% url 'hall_manage' %}">Назад к списку</a>
+</body>
+</html>

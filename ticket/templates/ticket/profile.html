@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Личный кабинет - Кинотеатр Премьера</title>
+    <style>
+        .profile-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .profile-card {
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #ffcc00;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .ticket-card {
+            background: rgba(20, 20, 20, 0.8);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffcc00;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .ticket-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .info-item {
+            background: rgba(30, 30, 30, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .no-tickets {
+            text-align: center;
+            padding: 40px;
+            color: #aaa;
+        }
+        * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            background: linear-gradient(135deg, #000 0%, #222 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(30, 30, 30, 0.9);
+            padding: 15px 20px;
+            border-bottom: 2px solid #ffcc00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            color: #ffcc00;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+        }
+
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-panel a, .btn {
+            color: #ffcc00;
+            text-decoration: none;
+            padding: 8px 15px;
+            border: 1px solid #ff0000;
+            border-radius: 5px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .user-panel a:hover, .btn:hover {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(255, 0, 0, 0.4);
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 25px 0;
+            color: #ffcc00;
+            font-size: 36px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .card {
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .btn-buy {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #fff;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            margin-top: 15px;
+        }
+
+        .btn-buy:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff0000;
+        }
+
+        .alert-success {
+            background: rgba(0, 128, 0, 0.2);
+            border-color: #008000;
+        }
+
+        .alert-info {
+            background: rgba(255, 204, 0, 0.2);
+            border-color: #ffcc00;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #ffcc00;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid #ff0000;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #ffcc00;
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-actions {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #fff;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
+        }
+        .error-field {
+            border-color: #ff6b6b !important;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">КИНОТЕАТР ПРЕМЬЕРА</div>
+        <div class="user-panel">
+            <a href="{% url 'home' %}" class="btn">На главную</a>
+            <a href="{% url 'logout' %}">Выйти</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 class="page-title">Личный кабинет</h1>
+
+        {% if messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="profile-container">
+        <!-- Левая колонка - информация о пользователе -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        {{ user.name|first }}{{ user.surname|first }}
+                    </div>
+                    <h2>{{ user.name }} {{ user.surname }}</h2>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="id_email">Email</label>
+                            <input
+                                type="email"
+                                name="email"
+                                value="{{ form.email.value }}"
+                                class="form-control"
+                                id="id_email"
+                                placeholder="Ваш email"
+                            >
+                            {% if form.email.errors %}
+                            <div class="form-errors">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_name">Имя</label>
+                            <input
+                                type="text"
+                                name="name"
+                                value="{{ form.name.value }}"
+                                class="form-control"
+                                id="id_name"
+                                placeholder="Ваше имя"
+                            >
+                            {% if form.name.errors %}
+                            <div class="form-errors">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_surname">Фамилия</label>
+                            <input
+                                type="text"
+                                name="surname"
+                                value="{{ form.surname.value }}"
+                                class="form-control"
+                                id="id_surname"
+                                placeholder="Ваша фамилия"
+                            >
+                            {% if form.surname.errors %}
+                            <div class="form-errors">{{ form.surname.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_number">Телефон</label>
+                            <input
+                                type="text"
+                                name="number"
+                                value="{{ form.number.value }}"
+                                class="form-control"
+                                id="id_number"
+                                placeholder="+7 (XXX) XXX-XX-XX"
+                            >
+                            {% if form.number.errors %}
+                            <div class="form-errors">{{ form.number.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">Сохранить изменения</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Правая колонка - история билетов -->
+            <div class="profile-card">
+                <h2 style="color: #ffcc00; margin-bottom: 20px;">История покупок</h2>
+
+                {% if tickets %}
+                    {% for ticket in tickets %}
+                    <div class="ticket-card">
+                        <div class="ticket-header">
+                            {% if ticket.screening.movie.poster %}
+                                <img
+                                    src="{{ ticket.screening.movie.poster.url }}"
+                                    alt="{{ ticket.screening.movie.title }}"
+                                    style="max-height: 60px; margin-right: 15px; border-radius: 5px;"
+                                >
+                            {% endif %}
+                            <h3>{{ ticket.screening.movie.title }}</h3>
+                            <a href="{% url 'download_ticket_single' ticket.id %}" class="btn-buy">Скачать билет</a>
+                        </div>
+
+                        <div class="ticket-info">
+                            <div class="info-item">
+                                <strong>Дата покупки:</strong><br>
+                                {{ ticket.purchase_date|date:"d M Y H:i" }}
+                            </div>
+                            <div class="info-item">
+                                <strong>Сеанс:</strong><br>
+                                {{ ticket.screening.start_time|date:"d M Y H:i" }}
+                            </div>
+                            <div class="info-item">
+                                <strong>Зал:</strong><br>
+                                {{ ticket.screening.hall.name }}
+                            </div>
+                            <div class="info-item">
+                                <strong>Место:</strong><br>
+                                Ряд {{ ticket.seat.row }}, Место {{ ticket.seat.number }}
+                            </div>
+                            <div class="info-item">
+                                <strong>Цена:</strong><br>
+                                {{ ticket.screening.price }} ₽
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-tickets">
+                        <h3>У вас еще нет купленных билетов</h3>
+                        <p>Перейдите на <a href="{% url 'home' %}" style="color: #ffcc00;">главную страницу</a>, чтобы выбрать сеанс</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
