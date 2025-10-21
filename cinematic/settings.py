@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-7p1@uwnq9vb=5wm+dx0^@alalrwk$szqp*ifr)vq@7c@k*y@vd
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -76,7 +76,7 @@ WSGI_APPLICATION = 'cinematic.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'cinematic',
+        'NAME': 'cinema',
         'USER': 'postgres',
         'PASSWORD': '123',
         'HOST': 'localhost',
