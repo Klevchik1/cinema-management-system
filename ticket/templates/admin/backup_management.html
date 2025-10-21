@@ -1,0 +1,170 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .backup-section {
+        background: var(--darkened-bg);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border-color);
+        color: var(--body-fg);
+    }
+    .backup-form {
+        margin: 15px 0;
+        padding: 15px;
+        background: var(--body-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin: 5px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary {
+        background: var(--primary);
+        color: var(--button-fg);
+    }
+    .btn-secondary {
+        background: var(--secondary);
+        color: var(--button-fg);
+    }
+    .btn:hover {
+        opacity: 0.9;
+    }
+    .backup-list {
+        margin-top: 20px;
+    }
+    .backup-item {
+        background: var(--body-bg);
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+        border-left: 4px solid var(--primary);
+        color: var(--body-fg);
+    }
+    .form-group {
+        margin: 15px 0;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: var(--body-fg);
+    }
+    input[type="date"] {
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 14px;
+        margin-right: 10px;
+        background: var(--body-bg);
+        color: var(--body-fg);
+    }
+    h1, h2, h3 {
+        color: var(--body-fg);
+    }
+    p {
+        color: var(--body-fg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>🗃️ Управление бэкапами базы данных</h1>
+
+    <!-- Сообщения -->
+    {% if messages %}
+        <ul class="messagelist">
+            {% for message in messages %}
+                <li class="{% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <!-- Секция создания бэкапов -->
+    <div class="backup-section">
+        <h2>Создать новый бэкап</h2>
+
+        <!-- Полный бэкап -->
+        <div class="backup-form">
+            <h3>Полный бэкап базы данных</h3>
+            <p>Создает полную копию всей базы данных</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="full_backup">
+                <button type="submit" class="btn btn-primary">
+                    🗃️ Создать полный бэкап
+                </button>
+            </form>
+        </div>
+
+        <!-- Дневной бэкап -->
+        <div class="backup-form">
+            <h3>Бэкап за определенный день</h3>
+            <p>Создает бэкап данных за выбранную дату</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="daily_backup">
+                <div class="form-group">
+                    <label for="backup_date">Выберите дату:</label>
+                    <input type="date" id="backup_date" name="backup_date" required>
+                    <button type="submit" class="btn btn-secondary">
+                        📅 Создать дневной бэкап
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список существующих бэкапов -->
+    <div class="backup-section">
+        <h2>Существующие бэкапы</h2>
+
+        {% if backups %}
+            <div class="backup-list">
+                {% for backup in backups %}
+                    <div class="backup-item">
+                        <strong>{{ backup.name }}</strong><br>
+                        <small>Файл: {{ backup.backup_file }}</small><br>
+                        <small>Тип: {{ backup.get_backup_type_display }}</small><br>
+                        <small>Дата: {{ backup.backup_date|default:"-" }}</small><br>
+                        <small>Создан: {{ backup.created_at|date:"Y-m-d H:i:s" }}</small><br>
+                        <small>Размер: {{ backup.file_size }}</small><br>
+                        <small>Статус:
+                            <span style="color: {% if backup.file_exists %}var(--message-success-bg){% else %}var(--message-error-bg){% endif %};">
+                                {{ backup.file_status }}
+                            </span>
+                        </small>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Бэкапы пока не созданы</p>
+        {% endif %}
+    </div>
+
+    <!-- Кнопка возврата -->
+    <div style="margin-top: 20px;">
+        <a href="{% url 'admin:ticket_backupmanager_changelist' %}" class="btn" style="background: var(--secondary); color: var(--button-fg);">
+            ← Назад к списку бэкапов
+        </a>
+    </div>
+</div>
+
+<script>
+    // Устанавливаем максимальную дату как сегодня
+    document.getElementById('backup_date').max = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

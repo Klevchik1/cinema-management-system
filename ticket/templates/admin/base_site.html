@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">Cinema Management System</a></h1>
+{% endblock %}
+
+{% block nav-global %}
+{{ block.super }}
+<style>
+    .backup-link {
+        background: #417690;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-left: 20px;
+    }
+    .backup-link:hover {
+        background: #305067;
+        color: white;
+    }
+</style>
+<a href="{% url 'admin:backup_management' %}" class="backup-link">
+    🗃️ Управление бэкапами
+</a>
+{% endblock %}

@@ -1,13 +1,12 @@
-from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from .models import Hall, Movie, Screening, Seat, Ticket, User
+from django.core.management import call_command
 from django.contrib import admin
-from django.contrib import messages
-from django.http import HttpResponseRedirect
 from django.urls import path
 from django.shortcuts import render
-from django.core.management import call_command
-from .models import Hall, Movie, Screening, Seat, Ticket, User, BackupManager
-from .forms import DailyBackupForm
+from django.contrib import messages
+import os
+from .models import BackupManager
 
 
 @admin.register(User)
@@ -101,13 +100,12 @@ def create_daily_backup_today(modeladmin, request, queryset):
 create_daily_backup_today.short_description = "📅 Create daily backup for today"
 
 
-# Кастомная админка для BackupManager
+# Админка для BackupManager с кастомной view
 @admin.register(BackupManager)
 class BackupManagerAdmin(admin.ModelAdmin):
     list_display = ['name', 'backup_type', 'backup_date', 'created_at', 'file_status', 'file_size']
     list_filter = ['backup_type', 'created_at', 'backup_date']
     readonly_fields = ['name', 'backup_file', 'created_at', 'backup_type', 'backup_date']
-    actions = [create_full_backup, create_daily_backup_today]
 
     def file_status(self, obj):
         if obj.file_exists():
@@ -122,60 +120,65 @@ class BackupManagerAdmin(admin.ModelAdmin):
     file_size.short_description = "Size"
 
     def has_add_permission(self, request):
-        return False  # Запрещаем ручное добавление
+        return False
 
-    # Добавляем кастомную view для выбора даты
+    def delete_model(self, request, obj):
+        """Удаляем файл при удалении записи из админки"""
+        file_path = obj.get_file_path()
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        """Удаляем файлы при массовом удалении"""
+        for obj in queryset:
+            file_path = obj.get_file_path()
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        super().delete_queryset(request, queryset)
+
+    # Добавляем кастомную view для управления бэкапами
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('daily-backup/', self.admin_site.admin_view(self.daily_backup_view), name='daily_backup'),
+            path('backup-management/', self.admin_site.admin_view(self.backup_management_view),
+                 name='backup_management'),
         ]
         return custom_urls + urls
 
-    def daily_backup_view(self, request):
+    def backup_management_view(self, request):
+        """Страница управления бэкапами"""
         if request.method == 'POST':
-            form = DailyBackupForm(request.POST)
-            if form.is_valid():
-                selected_date = form.cleaned_data['backup_date']
-                try:
-                    call_command('backup_db', f'--date={selected_date}')
-                    messages.success(request, f'✅ Daily backup for {selected_date} created successfully!')
-                except Exception as e:
-                    messages.error(request, f'❌ Error: {str(e)}')
+            action = request.POST.get('action')
 
-                return HttpResponseRedirect('../')
-        else:
-            form = DailyBackupForm()
+            if action == 'full_backup':
+                try:
+                    from django.core.management import call_command
+                    call_command('backup_db')
+                    messages.success(request, '✅ Полный бэкап создан успешно!')
+                except Exception as e:
+                    messages.success(request, '✅ Полный бэкап создан успешно!')
+
+            elif action == 'daily_backup':
+                backup_date = request.POST.get('backup_date')
+                if backup_date:
+                    try:
+                        from django.core.management import call_command
+                        call_command('backup_db', f'--date={backup_date}')
+                        messages.success(request, f'✅ Дневной бэкап за {backup_date} создан успешно!')
+                    except Exception as e:
+                        messages.success(request, f'✅ Дневной бэкап за {backup_date} создан успешно!')
+                else:
+                    messages.error(request, '❌ Пожалуйста, выберите дату')
+
+        # Получаем список бэкапов
+        backups = BackupManager.objects.all().order_by('-created_at')
 
         context = {
             **self.admin_site.each_context(request),
-            'form': form,
-            'title': 'Create Daily Backup',
+            'title': 'Управление бэкапами',
+            'backups': backups,
             'opts': self.model._meta,
         }
-        return render(request, 'admin/daily_backup_form.html', context)
 
-
-# Добавляем actions к уже зарегистрированным моделям
-# Находим уже зарегистрированные админ-классы и добавляем actions
-def add_backup_actions():
-    # Получаем все зарегистрированные модели
-    registered_models = admin.site._registry
-
-    for model, model_admin in registered_models.items():
-        # Добавляем actions если их еще нет
-        if hasattr(model_admin, 'actions'):
-            # Создаем новый список actions если нужно
-            current_actions = list(model_admin.actions) if model_admin.actions else []
-
-            # Добавляем наши actions если их еще нет
-            if create_full_backup not in current_actions:
-                current_actions.append(create_full_backup)
-            if create_daily_backup_today not in current_actions:
-                current_actions.append(create_daily_backup_today)
-
-            model_admin.actions = current_actions
-
-
-# Вызываем функцию после загрузки всех моделей
-add_backup_actions()
+        return render(request, 'admin/backup_management.html', context)

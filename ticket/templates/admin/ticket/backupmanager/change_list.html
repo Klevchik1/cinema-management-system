@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+    <li>
+        <a href="{% url 'admin:backup_management' %}" class="addlink" style="background: var(--primary); color: var(--button-fg); text-decoration: none;">
+            🗃️ Управление бэкапами
+        </a>
+    </li>
+    {{ block.super }}
+{% endblock %}
