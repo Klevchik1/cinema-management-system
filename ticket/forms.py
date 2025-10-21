@@ -4,6 +4,11 @@ from .models import User, Movie, Hall, Screening
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from django.contrib import admin
+from django.http import HttpResponseRedirect
+from django.urls import path
+from django.shortcuts import render
+from datetime import date
 
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(
@@ -106,3 +111,14 @@ class UserUpdateForm(forms.ModelForm):
                 'placeholder': '+7 (XXX) XXX-XX-XX'
             }),
         }
+
+
+class DailyBackupForm(forms.Form):
+    backup_date = forms.DateField(
+        label='Select date for backup',
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'max': str(date.today()),
+            'class': 'vDateField'
+        })
+    )

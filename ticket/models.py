@@ -9,6 +9,9 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 import logging
 logger = logging.getLogger(__name__)
+import os
+from django.conf import settings
+from datetime import datetime
 
 
 class CustomUserManager(BaseUserManager):
@@ -141,3 +144,37 @@ def create_hall_seats(sender, instance, created, **kwargs):
                     row=row,
                     number=seat_num
                 )
+
+
+class BackupManager(models.Model):
+    """Модель для управления бэкапами"""
+    name = models.CharField(max_length=255)
+    backup_file = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    backup_type = models.CharField(max_length=50, choices=[
+        ('full', 'Full Backup'),
+        ('daily', 'Daily Backup')
+    ])
+    backup_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Backup"
+        verbose_name_plural = "Backups"
+
+    def __str__(self):
+        return self.name
+
+    def get_file_path(self):
+        """Получить полный путь к файлу бэкапа"""
+        return os.path.join(settings.BASE_DIR, 'backups', self.backup_file)
+
+    def file_exists(self):
+        """Проверить существует ли файл бэкапа"""
+        return os.path.exists(self.get_file_path())
+
+    def file_size(self):
+        """Получить размер файла"""
+        if self.file_exists():
+            size = os.path.getsize(self.get_file_path())
+            return f"{size / 1024 / 1024:.2f} MB"
+        return "File not found"
