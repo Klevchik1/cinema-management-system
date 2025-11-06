@@ -179,7 +179,7 @@ class Command(BaseCommand):
                 backup_date=backup_date
             )
 
-            file_size = os.path.getsize(backp_path)
+            file_size = os.path.getsize(backup_path)
             self.stdout.write(
                 self.style.SUCCESS(f'✅ Simple backup created: {os.path.basename(backup_path)} ({file_size} bytes)')
             )
