@@ -68,6 +68,8 @@ def home(request):
     genre_filter = request.GET.get('genre', '')
     time_from = request.GET.get('time_from', '')
     time_to = request.GET.get('time_to', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
 
     screenings = Screening.objects.filter(
         start_time__gt=local_now
@@ -95,6 +97,14 @@ def home(request):
     if time_to:
         time_to_obj = datetime.strptime(time_to, '%H:%M').time()
         screenings = screenings.filter(start_time__time__lte=time_to_obj)
+
+    if date_from:
+        date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+        screenings = screenings.filter(start_time__date__gte=date_from_obj)
+
+    if date_to:
+        date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+        screenings = screenings.filter(start_time__date__lte=date_to_obj)
 
     genres = Movie.objects.values_list('genre', flat=True).distinct()
 
