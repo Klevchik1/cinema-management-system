@@ -19,6 +19,9 @@ from datetime import timedelta
 from django.db.models import Q
 import logging
 from datetime import datetime
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from .forms import CustomPasswordChangeForm, UserUpdateForm
 logger = logging.getLogger(__name__)
 
 @staff_member_required
@@ -358,21 +361,41 @@ def screening_delete(request, screening_id):
 def profile(request):
     tickets = Ticket.objects.filter(user=request.user).order_by('-purchase_date')
 
+    profile_form = UserUpdateForm(instance=request.user)
+    password_form = CustomPasswordChangeForm(user=request.user)
+
     if request.method == 'POST':
-        form = UserUpdateForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Ваши данные успешно обновлены!')
-            return redirect('profile')
-        else:
-            for field in form.errors:
-                form[field].field.widget.attrs['class'] = 'form-control error-field'
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
-    else:
-        form = UserUpdateForm(instance=request.user)
+        form_type = request.POST.get('form_type')
+
+        if form_type == 'profile':
+            profile_form = UserUpdateForm(request.POST, instance=request.user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, 'Ваши данные успешно обновлены!')
+                return redirect('profile')
+            else:
+                for field in profile_form.errors:
+                    if field in profile_form.fields:
+                        profile_form[field].field.widget.attrs['class'] = 'form-control error-field'
+                messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
+
+        elif form_type == 'password':
+            password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                # Обновляем сессию, чтобы пользователь не разлогинился
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Пароль успешно изменен!')
+                return redirect('profile')
+            else:
+                for field in password_form.errors:
+                    if field in password_form.fields:
+                        password_form[field].field.widget.attrs['class'] = 'form-control error-field'
+                messages.error(request, 'Пожалуйста, исправьте ошибки в форме смены пароля.')
 
     return render(request, 'ticket/profile.html', {
-        'form': form,
+        'form': profile_form,
+        'password_form': password_form,
         'tickets': tickets
     })
 

@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.core.validators import RegexValidator, validate_email
 import re
 from datetime import date
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import password_validation
 
 
 class RegistrationForm(UserCreationForm):
@@ -235,5 +237,29 @@ class DailyBackupForm(forms.Form):
             'type': 'date',
             'max': str(date.today()),
             'class': 'vDateField'
+        })
+    )
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label='Текущий пароль',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Введите текущий пароль'
+        })
+    )
+    new_password1 = forms.CharField(
+        label='Новый пароль',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Введите новый пароль'
+        }),
+        help_text=password_validation.password_validators_help_text_html()
+    )
+    new_password2 = forms.CharField(
+        label='Подтверждение нового пароля',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Повторите новый пароль'
         })
     )

@@ -271,6 +271,57 @@
             border-radius: 4px;
             border-left: 3px solid #ff6b6b;
         }
+
+        /* Стили для смены пароля */
+        .password-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #ffcc00;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #ffcc00;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: #ff0000;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .password-form {
+            background: rgba(20, 20, 20, 0.6);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ffcc00;
+            margin-top: 15px;
+        }
+
+        .section-title {
+            color: #ffcc00;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            font-size: 24px;
+        }
     </style>
 </head>
 <body>
@@ -305,6 +356,7 @@
 
                 <form method="post">
                     {% csrf_token %}
+                    <input type="hidden" name="form_type" value="profile">
 
                     <div class="form-grid">
                         <div class="form-group">
@@ -372,11 +424,92 @@
                         <button type="submit" class="btn-save">Сохранить изменения</button>
                     </div>
                 </form>
+
+                <!-- Секция смены пароля -->
+                <div class="password-section">
+                    <h3 class="section-title">🔐 Смена пароля</h3>
+
+                    <form method="post" class="password-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="password">
+
+                        <div class="form-group">
+                            <label for="id_old_password">Текущий пароль</label>
+                            <div class="input-with-icon">
+                                <input
+                                    type="password"
+                                    name="old_password"
+                                    class="form-control {% if password_form.old_password.errors %}error-field{% endif %}"
+                                    id="id_old_password"
+                                    placeholder="Введите текущий пароль"
+                                    required
+                                >
+                                <button type="button" class="password-toggle" onclick="togglePassword('id_old_password', this)">
+                                    👁️
+                                </button>
+                            </div>
+                            {% if password_form.old_password.errors %}
+                            <div class="form-errors">{{ password_form.old_password.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_new_password1">Новый пароль</label>
+                            <div class="input-with-icon">
+                                <input
+                                    type="password"
+                                    name="new_password1"
+                                    class="form-control {% if password_form.new_password1.errors %}error-field{% endif %}"
+                                    id="id_new_password1"
+                                    placeholder="Введите новый пароль"
+                                    required
+                                >
+                                <button type="button" class="password-toggle" onclick="togglePassword('id_new_password1', this)">
+                                    👁️
+                                </button>
+                            </div>
+                            {% if password_form.new_password1.errors %}
+                            <div class="form-errors">{{ password_form.new_password1.errors }}</div>
+                            {% endif %}
+                            {% if password_form.new_password1.help_text %}
+                            <div class="help-text" style="color: #ffcc00; font-size: 12px; margin-top: 5px;">
+                                {{ password_form.new_password1.help_text }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_new_password2">Подтверждение нового пароля</label>
+                            <div class="input-with-icon">
+                                <input
+                                    type="password"
+                                    name="new_password2"
+                                    class="form-control {% if password_form.new_password2.errors %}error-field{% endif %}"
+                                    id="id_new_password2"
+                                    placeholder="Повторите новый пароль"
+                                    required
+                                >
+                                <button type="button" class="password-toggle" onclick="togglePassword('id_new_password2', this)">
+                                    👁️
+                                </button>
+                            </div>
+                            {% if password_form.new_password2.errors %}
+                            <div class="form-errors">{{ password_form.new_password2.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-save" style="background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);">
+                                Сменить пароль
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- Правая колонка - история билетов -->
             <div class="profile-card">
-                <h2 style="color: #ffcc00; margin-bottom: 20px;">История покупок</h2>
+                <h2 style="color: #ffcc00; margin-bottom: 20px;">🎫 История покупок</h2>
 
                 {% if tickets %}
                     {% for ticket in tickets %}
@@ -424,33 +557,76 @@
                     </div>
                 {% endif %}
             </div>
-            <script>
-            // Форматирование номера телефона в реальном времени
-            document.getElementById('id_number').addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-
-                if (value.startsWith('7') || value.startsWith('8')) {
-                    value = value.substring(1);
-                }
-
-                if (value.length > 0) {
-                    value = '+7 (' + value;
-
-                    if (value.length > 7) {
-                        value = value.substring(0, 7) + ') ' + value.substring(7);
-                    }
-                    if (value.length > 12) {
-                        value = value.substring(0, 12) + '-' + value.substring(12);
-                    }
-                    if (value.length > 15) {
-                        value = value.substring(0, 15) + '-' + value.substring(15);
-                    }
-                }
-
-                e.target.value = value;
-            });
-            </script>
         </div>
     </div>
+
+    <script>
+        // Форматирование номера телефона в реальном времени
+        document.getElementById('id_number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+
+            if (value.startsWith('7') || value.startsWith('8')) {
+                value = value.substring(1);
+            }
+
+            if (value.length > 0) {
+                value = '+7 (' + value;
+
+                if (value.length > 7) {
+                    value = value.substring(0, 7) + ') ' + value.substring(7);
+                }
+                if (value.length > 12) {
+                    value = value.substring(0, 12) + '-' + value.substring(12);
+                }
+                if (value.length > 15) {
+                    value = value.substring(0, 15) + '-' + value.substring(15);
+                }
+            }
+
+            e.target.value = value;
+        });
+
+        // Функция переключения видимости пароля
+        function togglePassword(inputId, button) {
+            const passwordInput = document.getElementById(inputId);
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '🔒';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+
+        // Обработка ошибок при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Подсветка полей с ошибками для формы профиля
+            const errorFields = document.querySelectorAll('.error-field');
+            errorFields.forEach(field => {
+                field.style.borderColor = '#ff6b6b';
+                field.style.boxShadow = '0 0 10px rgba(255, 107, 107, 0.5)';
+            });
+
+            // Добавляем кнопки просмотра пароля для всех полей пароля
+            const passwordFields = document.querySelectorAll('input[type="password"]');
+            passwordFields.forEach(field => {
+                if (!field.parentNode.querySelector('.password-toggle')) {
+                    const toggleButton = document.createElement('button');
+                    toggleButton.type = 'button';
+                    toggleButton.className = 'password-toggle';
+                    toggleButton.innerHTML = '👁️';
+                    toggleButton.onclick = function() {
+                        togglePassword(field.id, this);
+                    };
+
+                    const inputContainer = document.createElement('div');
+                    inputContainer.className = 'input-with-icon';
+                    field.parentNode.insertBefore(inputContainer, field);
+                    inputContainer.appendChild(field);
+                    inputContainer.appendChild(toggleButton);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
