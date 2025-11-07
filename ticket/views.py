@@ -30,14 +30,14 @@ def admin_dashboard(request):
 
 
 def register(request):
-    print("=== REGISTER VIEW CALLED ===")  # Отладочная печать
+    print("=== REGISTER VIEW CALLED ===")
     print(f"Method: {request.method}")
 
     if request.method == 'POST':
-        print("POST data:", request.POST)  # Что пришло в запросе
+        print("POST data:", request.POST)
         form = RegistrationForm(request.POST)
-        print("Form is valid:", form.is_valid())  # Проверяем валидность
-        print("Form errors:", form.errors)  # Какие ошибки
+        print("Form is valid:", form.is_valid())
+        print("Form errors:", form.errors)
 
         if form.is_valid():
             user = form.save()

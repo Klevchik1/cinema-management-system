@@ -89,7 +89,7 @@ class RegistrationForm(UserCreationForm):
             cleaned_number = '+' + cleaned_number
 
         # Проверяем длину номера
-        if len(cleaned_number) != 12:  # +79123456789
+        if len(cleaned_number) != 12:
             raise ValidationError('Номер телефона должен содержать 11 цифр')
 
         if User.objects.filter(number=cleaned_number).exists():
