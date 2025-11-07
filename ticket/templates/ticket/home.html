@@ -139,25 +139,37 @@
             transform: translateY(-2px);
             box-shadow: 0 3px 10px rgba(142, 45, 226, 0.4);
         }
-        .content-container {
-            display: flex;
+
+        /* ИСПРАВЛЕННЫЙ КОНТЕЙНЕР ДЛЯ ФИЛЬТРОВ И СЕАНСОВ */
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
             gap: 20px;
-            margin-top: 20px;
+            align-items: start;
         }
 
-        .filters-container .form-group {
+        .filters-container {
+            position: sticky;
+            top: 20px;
+        }
+
+        .screenings-container {
+            min-width: 0; /* Предотвращает переполнение */
+        }
+
+        .form-group {
             margin-bottom: 15px;
         }
 
-        .filters-container label {
+        .form-group label {
             display: block;
             color: #ffcc00;
             margin-bottom: 5px;
             font-size: 14px;
         }
 
-        .filters-container select,
-        .filters-container input {
+        .form-group select,
+        .form-group input {
             width: 100%;
             padding: 10px;
             border: 2px solid #ff0000;
@@ -167,14 +179,103 @@
             font-size: 14px;
         }
 
+        .screening-header {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .screening-poster {
+            flex: 0 0 150px;
+            margin-right: 20px;
+        }
+
+        .screening-poster img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #ffcc00;
+        }
+
+        .screening-details {
+            flex: 1;
+        }
+
+        .screening-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .screening-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #ff0000;
+            padding-top: 15px;
+        }
+
+        .screening-price {
+            font-size: 24px;
+            color: #ffcc00;
+        }
+
+        /* СТИЛИ ДЛЯ КНОПОК ФИЛЬТРОВ */
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-apply {
+            flex: 1;
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .btn-reset {
+            flex: 1;
+            background: rgba(50, 50, 50, 0.8);
+            color: #ffcc00;
+            padding: 12px;
+            border: 2px solid #ff0000;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-apply:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(255, 0, 0, 0.4);
+        }
+
+        .btn-reset:hover {
+            background: rgba(70, 70, 70, 0.8);
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
-            .content-container {
-                flex-direction: column;
+            .main-content {
+                grid-template-columns: 1fr;
             }
 
             .filters-container {
-                margin-right: 0;
-                margin-bottom: 20px;
+                position: static;
+            }
+
+            .filter-buttons {
+                flex-direction: column;
             }
         }
     </style>
@@ -211,134 +312,135 @@
             </div>
         {% endif %}
 
-        <div class="filters-container" style="flex: 0 0 250px; margin-right: 20px;">
-            <div class="card">
-                <h3 style="color: #ffcc00; text-align: center; margin-bottom: 20px;">Фильтры</h3>
+        <!-- ИСПРАВЛЕННАЯ СТРУКТУРА -->
+        <div class="main-content">
+            <!-- Левая колонка - фильтры -->
+            <div class="filters-container">
+                <div class="card">
+                    <h3 style="color: #ffcc00; text-align: center; margin-bottom: 20px;">Фильтры</h3>
 
-                <form method="get">
-                    <!-- Поиск по названию -->
-                    <div class="form-group">
-                        <label for="search">Поиск фильма</label>
-                        <input
-                            type="text"
-                            name="search"
-                            id="search"
-                            class="form-control"
-                            placeholder="Введите название"
-                            value="{{ current_filters.search }}"
-                        >
-                    </div>
-
-                    <!-- Фильтр по залу -->
-                    <div class="form-group">
-                        <label for="hall">Зал</label>
-                        <select name="hall" id="hall" class="form-control">
-                            <option value="">Все залы</option>
-                            {% for hall in halls %}
-                                <option
-                                    value="{{ hall.id }}"
-                                    {% if current_filters.hall == hall.id|stringformat:"s" %}selected{% endif %}
-                                >
-                                    {{ hall.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Фильтр по жанру -->
-                    <div class="form-group">
-                        <label for="genre">Жанр</label>
-                        <select name="genre" id="genre" class="form-control">
-                            <option value="">Все жанры</option>
-                            {% for genre in genres %}
-                                <option
-                                    value="{{ genre }}"
-                                    {% if current_filters.genre == genre %}selected{% endif %}
-                                >
-                                    {{ genre }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Фильтр по времени (диапазон) -->
-                    <div class="form-group">
-                        <label for="time_from">Время начала с</label>
-                        <input
-                            type="time"
-                            name="time_from"
-                            id="time_from"
-                            class="form-control"
-                            value="{{ current_filters.time_from }}"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="time_to">Время начала до</label>
-                        <input
-                            type="time"
-                            name="time_to"
-                            id="time_to"
-                            class="form-control"
-                            value="{{ current_filters.time_to }}"
-                        >
-                    </div>
-
-                    <!-- Фильтр по дате (диапазон) -->
-                    <div class="form-group">
-                        <label for="date_from">Дата начала с</label>
-                        <input
-                            type="date"
-                            name="date_from"
-                            id="date_from"
-                            class="form-control"
-                            value="{{ current_filters.date_from }}"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="date_to">Дата начала до</label>
-                        <input
-                            type="date"
-                            name="date_to"
-                            id="date_to"
-                            class="form-control"
-                            value="{{ current_filters.date_to }}"
-                        >
-                    </div>
-
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button type="submit" class="btn-buy" style="flex: 1;">Применить</button>
-                        <a href="{% url 'home' %}" class="btn-buy" style="flex: 1; text-align: center; background: #333;">Сбросить</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="screenings-grid">
-            {% for screening in screenings %}
-            <div class="card">
-                <div style="display: flex; margin-bottom: 15px;">
-                    {% if screening.movie.poster %}
-                        <div style="flex: 0 0 150px; margin-right: 20px;">
-                            <img
-                                src="{{ screening.movie.poster.url }}"
-                                alt="{{ screening.movie.title }}"
-                                style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #ffcc00;"
+                    <form method="get">
+                        <!-- Поиск по названию -->
+                        <div class="form-group">
+                            <label for="search">Поиск фильма</label>
+                            <input
+                                type="text"
+                                name="search"
+                                id="search"
+                                class="form-control"
+                                placeholder="Введите название"
+                                value="{{ current_filters.search }}"
                             >
                         </div>
-                    {% endif %}
-                    <div style="flex: 1;">
-                        <div class="screening-header">
+
+                        <!-- Фильтр по залу -->
+                        <div class="form-group">
+                            <label for="hall">Зал</label>
+                            <select name="hall" id="hall" class="form-control">
+                                <option value="">Все залы</option>
+                                {% for hall in halls %}
+                                    <option
+                                        value="{{ hall.id }}"
+                                        {% if current_filters.hall == hall.id|stringformat:"s" %}selected{% endif %}
+                                    >
+                                        {{ hall.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Фильтр по жанру -->
+                        <div class="form-group">
+                            <label for="genre">Жанр</label>
+                            <select name="genre" id="genre" class="form-control">
+                                <option value="">Все жанры</option>
+                                {% for genre in genres %}
+                                    <option
+                                        value="{{ genre }}"
+                                        {% if current_filters.genre == genre %}selected{% endif %}
+                                    >
+                                        {{ genre }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Фильтр по дате -->
+                        <div class="form-group">
+                            <label for="date_from">Дата с</label>
+                            <input
+                                type="date"
+                                name="date_from"
+                                id="date_from"
+                                class="form-control"
+                                value="{{ current_filters.date_from }}"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="date_to">Дата до</label>
+                            <input
+                                type="date"
+                                name="date_to"
+                                id="date_to"
+                                class="form-control"
+                                value="{{ current_filters.date_to }}"
+                            >
+                        </div>
+
+                        <!-- Фильтр по времени -->
+                        <div class="form-group">
+                            <label for="time_from">Время начала с</label>
+                            <input
+                                type="time"
+                                name="time_from"
+                                id="time_from"
+                                class="form-control"
+                                value="{{ current_filters.time_from }}"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="time_to">Время начала до</label>
+                            <input
+                                type="time"
+                                name="time_to"
+                                id="time_to"
+                                class="form-control"
+                                value="{{ current_filters.time_to }}"
+                            >
+                        </div>
+
+                        <!-- КНОПКИ ПРИМЕНИТЬ И СБРОСИТЬ -->
+                        <div class="filter-buttons">
+                            <button type="submit" class="btn-apply">Применить</button>
+                            <a href="{% url 'home' %}" class="btn-reset">Сбросить</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Правая колонка - сеансы -->
+            <div class="screenings-container">
+                {% for screening in screenings %}
+                <div class="card">
+                    <div class="screening-header">
+                        {% if screening.movie.poster %}
+                            <div class="screening-poster">
+                                <img
+                                    src="{{ screening.movie.poster.url }}"
+                                    alt="{{ screening.movie.title }}"
+                                >
+                            </div>
+                        {% endif %}
+                        <div class="screening-details">
                             <h2 style="color: #ffcc00; margin-bottom: 10px;">{{ screening.movie.title }}</h2>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <div class="screening-info">
                                 <span><strong>Жанр:</strong> {{ screening.movie.genre }}</span>
                                 <span><strong>Длительность:</strong> {{ screening.movie.duration }}</span>
                             </div>
-                        </div>
 
-                        <div class="screening-info" style="margin-bottom: 15px;">
-                            <div style="display: flex; justify-content: space-between;">
+                            <div class="screening-info">
                                 <div>
                                     <p><strong>Зал:</strong> {{ screening.hall.name }}</p>
                                     <p>{{ screening.hall.rows }} рядов × {{ screening.hall.seats_per_row }} мест</p>
@@ -350,22 +452,38 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ff0000; padding-top: 15px;">
-                    <div style="font-size: 24px; color: #ffcc00;">
-                        <strong>{{ screening.price }} ₽</strong>
+                    <div class="screening-footer">
+                        <div class="screening-price">
+                            <strong>{{ screening.price }} ₽</strong>
+                        </div>
+                        <a href="{% url 'screening_detail' screening.id %}" class="btn-buy">Выбрать места</a>
                     </div>
-                    <a href="{% url 'screening_detail' screening.id %}" class="btn-buy">Выбрать места</a>
                 </div>
+                {% empty %}
+                <div class="card" style="text-align: center; padding: 40px;">
+                    <h3 style="color: #ffcc00;">Нет доступных сеансов</h3>
+                    <p>Попробуйте изменить параметры фильтрации</p>
+                </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div class="card" style="text-align: center; padding: 40px;">
-                <h3 style="color: #ffcc00;">Нет доступных сеансов</h3>
-                <p>Попробуйте зайти позже</p>
-            </div>
-            {% endfor %}
         </div>
     </div>
+
+    <script>
+        // Устанавливаем минимальную дату как сегодня для фильтров даты
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateFrom = document.getElementById('date_from');
+            const dateTo = document.getElementById('date_to');
+
+            if (dateFrom) {
+                dateFrom.min = today;
+            }
+            if (dateTo) {
+                dateTo.min = today;
+            }
+        });
+    </script>
 </body>
 </html>

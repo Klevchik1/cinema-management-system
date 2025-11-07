@@ -17,25 +17,36 @@ from .forms import MovieForm, HallForm, ScreeningForm
 from django.contrib.auth.decorators import login_required
 from datetime import timedelta
 from django.db.models import Q
-from django.db.models.functions import TruncHour
 import logging
+from datetime import datetime
 logger = logging.getLogger(__name__)
 
 @staff_member_required
 def admin_dashboard(request):
     return render(request, 'ticket/admin_dashboard.html')
 
+
 def register(request):
+    print("=== REGISTER VIEW CALLED ===")  # Отладочная печать
+    print(f"Method: {request.method}")
+
     if request.method == 'POST':
+        print("POST data:", request.POST)  # Что пришло в запросе
         form = RegistrationForm(request.POST)
+        print("Form is valid:", form.is_valid())  # Проверяем валидность
+        print("Form errors:", form.errors)  # Какие ошибки
+
         if form.is_valid():
             user = form.save()
             login(request, user)
+            messages.success(request, 'Регистрация прошла успешно!')
             return redirect('home')
         else:
-            messages.error(request, 'Ошибка регистрации')
+            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = RegistrationForm()
+        print("GET request - new form created")
+
     return render(request, 'ticket/register.html', {'form': form})
 
 
@@ -89,8 +100,6 @@ def home(request):
 
     # Фильтрация по диапазону времени
     if time_from:
-        # Преобразуем время из формата HH:MM в datetime
-        from datetime import datetime
         time_from_obj = datetime.strptime(time_from, '%H:%M').time()
         screenings = screenings.filter(start_time__time__gte=time_from_obj)
 
@@ -98,6 +107,7 @@ def home(request):
         time_to_obj = datetime.strptime(time_to, '%H:%M').time()
         screenings = screenings.filter(start_time__time__lte=time_to_obj)
 
+    # Фильтрация по диапазону дат (если нужно)
     if date_from:
         date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
         screenings = screenings.filter(start_time__date__gte=date_from_obj)
@@ -117,7 +127,9 @@ def home(request):
             'hall': hall_filter,
             'genre': genre_filter,
             'time_from': time_from,
-            'time_to': time_to
+            'time_to': time_to,
+            'date_from': date_from,
+            'date_to': date_to
         }
     })
 
@@ -154,7 +166,18 @@ def screening_detail(request, screening_id):
 @require_POST
 def book_tickets(request):
     screening_id = request.POST.get('screening_id')
-    seat_ids = json.loads(request.POST.get('selected_seats'))
+    selected_seats = request.POST.get('selected_seats')
+
+    # Проверяем, что selected_seats не пустое
+    if not selected_seats:
+        messages.error(request, "Выберите хотя бы одно место.")
+        return redirect('screening_detail', screening_id=screening_id)
+
+    try:
+        seat_ids = json.loads(selected_seats)
+    except json.JSONDecodeError:
+        messages.error(request, "Ошибка при обработке выбранных мест. Попробуйте снова.")
+        return redirect('screening_detail', screening_id=screening_id)
 
     if not seat_ids:
         messages.error(request, "Выберите хотя бы одно место.")
@@ -162,12 +185,14 @@ def book_tickets(request):
 
     screening = get_object_or_404(Screening, pk=screening_id)
 
+    # Проверяем доступность мест
     for seat_id in seat_ids:
         seat = get_object_or_404(Seat, pk=seat_id)
         if Ticket.objects.filter(screening=screening, seat=seat).exists():
             messages.error(request, f"Место {seat.row}-{seat.number} уже занято.")
             return redirect('screening_detail', screening_id=screening_id)
 
+    # Создаем билеты
     tickets = []
     for seat_id in seat_ids:
         seat = get_object_or_404(Seat, pk=seat_id)

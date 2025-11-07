@@ -78,6 +78,11 @@
             box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
         }
 
+        .error-field {
+            border-color: #ff6b6b !important;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5) !important;
+        }
+
         button[type="submit"] {
             width: 100%;
             padding: 14px;
@@ -134,6 +139,10 @@
             color: #ff6b6b;
             margin-top: 5px;
             font-size: 14px;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #ff6b6b;
         }
 
         .help-text {
@@ -152,6 +161,7 @@
         .help-text li {
             margin-bottom: 5px;
         }
+
         .admin-panel {
             margin-top: 25px;
             padding-top: 15px;
@@ -177,19 +187,23 @@
             box-shadow: 0 3px 10px rgba(255, 204, 0, 0.3);
         }
 
-        .error-field {
-            border-color: #ff6b6b !important;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5) !important;
+        .non-field-errors {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ff6b6b;
+            margin-bottom: 20px;
+            text-align: left;
         }
 
-        .form-errors {
-            color: #ff6b6b;
-            margin-top: 5px;
-            font-size: 14px;
-            background: rgba(255, 107, 107, 0.1);
-            padding: 8px;
-            border-radius: 4px;
-            border-left: 3px solid #ff6b6b;
+        .non-field-errors ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .non-field-errors li {
+            margin-bottom: 5px;
         }
     </style>
 </head>
@@ -206,46 +220,116 @@
         </div>
         {% endif %}
 
+        <!-- Ошибки не связанные с конкретными полями -->
+        {% if form.non_field_errors %}
+        <div class="non-field-errors">
+            <ul>
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <form method="post">
             {% csrf_token %}
 
             <div class="form-group">
                 <label for="id_email">Email</label>
-                {{ form.email }}
+                <input
+                    type="email"
+                    name="email"
+                    id="id_email"
+                    class="form-control {% if form.email.errors %}error-field{% endif %}"
+                    placeholder="Ваш email"
+                    value="{{ form.email.value|default:'' }}"
+                    required
+                >
                 {% if form.email.errors %}
-                <div class="form-errors">{{ form.email.errors }}</div>
+                <div class="form-errors">
+                    {% for error in form.email.errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
 
             <div class="form-group">
                 <label for="id_name">Имя</label>
-                {{ form.name }}
+                <input
+                    type="text"
+                    name="name"
+                    id="id_name"
+                    class="form-control {% if form.name.errors %}error-field{% endif %}"
+                    placeholder="Ваше имя"
+                    value="{{ form.name.value|default:'' }}"
+                    required
+                >
                 {% if form.name.errors %}
-                <div class="form-errors">{{ form.name.errors }}</div>
+                <div class="form-errors">
+                    {% for error in form.name.errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
 
             <div class="form-group">
                 <label for="id_surname">Фамилия</label>
-                {{ form.surname }}
+                <input
+                    type="text"
+                    name="surname"
+                    id="id_surname"
+                    class="form-control {% if form.surname.errors %}error-field{% endif %}"
+                    placeholder="Ваша фамилия"
+                    value="{{ form.surname.value|default:'' }}"
+                    required
+                >
                 {% if form.surname.errors %}
-                <div class="form-errors">{{ form.surname.errors }}</div>
+                <div class="form-errors">
+                    {% for error in form.surname.errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
 
             <div class="form-group">
                 <label for="id_number">Телефон</label>
-                {{ form.number }}
+                <input
+                    type="text"
+                    name="number"
+                    id="id_number"
+                    class="form-control {% if form.number.errors %}error-field{% endif %}"
+                    placeholder="+7 (XXX) XXX-XX-XX"
+                    value="{{ form.number.value|default:'' }}"
+                    required
+                >
                 {% if form.number.errors %}
-                <div class="form-errors">{{ form.number.errors }}</div>
+                <div class="form-errors">
+                    {% for error in form.number.errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
 
             <div class="form-group">
                 <label for="id_password1">Пароль</label>
-                {{ form.password1 }}
+                <input
+                    type="password"
+                    name="password1"
+                    id="id_password1"
+                    class="form-control {% if form.password1.errors %}error-field{% endif %}"
+                    placeholder="Придумайте пароль"
+                    required
+                >
                 {% if form.password1.errors %}
-                <div class="form-errors">{{ form.password1.errors }}</div>
+                <div class="form-errors">
+                    {% for error in form.password1.errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
                 {% endif %}
                 {% if form.password1.help_text %}
                 <div class="help-text">{{ form.password1.help_text|safe }}</div>
@@ -254,9 +338,20 @@
 
             <div class="form-group">
                 <label for="id_password2">Подтверждение пароля</label>
-                {{ form.password2 }}
+                <input
+                    type="password"
+                    name="password2"
+                    id="id_password2"
+                    class="form-control {% if form.password2.errors %}error-field{% endif %}"
+                    placeholder="Повторите пароль"
+                    required
+                >
                 {% if form.password2.errors %}
-                <div class="form-errors">{{ form.password2.errors }}</div>
+                <div class="form-errors">
+                    {% for error in form.password2.errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
 
@@ -269,7 +364,9 @@
                 <a href="/admin/" class="admin-link">Панель администратора</a>
             </div>
         </div>
-        <script>
+    </div>
+
+    <script>
         // Форматирование номера телефона в реальном времени
         document.getElementById('id_number').addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
@@ -294,7 +391,15 @@
 
             e.target.value = value;
         });
-        </script>
-    </div>
+
+        // Добавляем класс ошибки при загрузке страницы, если есть ошибки
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorFields = document.querySelectorAll('.error-field');
+            errorFields.forEach(field => {
+                field.style.borderColor = '#ff6b6b';
+                field.style.boxShadow = '0 0 10px rgba(255, 107, 107, 0.5)';
+            });
+        });
+    </script>
 </body>
 </html>

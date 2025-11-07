@@ -346,18 +346,23 @@
                 <form id="booking-form" method="post" action="{% url 'book_tickets' %}">
                     {% csrf_token %}
                     <input type="hidden" name="screening_id" value="{{ screening.id }}">
-                    <input type="hidden" name="selected_seats" id="selected-seats-input">
-                    <button type="submit" class="btn-buy">Купить выбранные билеты</button>
+                    <input type="hidden" name="selected_seats" id="selected-seats-input" value="[]">
+                    <button type="submit" class="btn-buy" id="book-button">Купить выбранные билеты</button>
                 </form>
             </div>
         </div>
     </div>
 
     <script>
-        // JavaScript для выбора мест (остаётся без изменений)
+               // JavaScript для выбора мест
         const selectedSeats = new Set();
         const selectedSeatsInfo = document.getElementById('selected-seats-info');
         const selectedSeatsInput = document.getElementById('selected-seats-input');
+
+        // Убедитесь, что input существует
+        if (selectedSeatsInput) {
+            selectedSeatsInput.value = JSON.stringify([]); // Инициализируем пустым массивом
+        }
 
         document.querySelectorAll('.seat:not(.booked)').forEach(seat => {
             seat.addEventListener('click', function() {
@@ -379,7 +384,12 @@
             const count = selectedSeats.size;
             const totalPrice = count * {{ screening.price }};
             selectedSeatsInfo.textContent = `Выбрано мест: ${count}, Общая стоимость: ${totalPrice} ₽`;
-            selectedSeatsInput.value = JSON.stringify(Array.from(selectedSeats));
+
+            // Преобразуем Set в массив для JSON
+            const seatsArray = Array.from(selectedSeats);
+            if (selectedSeatsInput) {
+                selectedSeatsInput.value = JSON.stringify(seatsArray);
+            }
         }
     </script>
 </body>
