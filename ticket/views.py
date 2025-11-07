@@ -66,7 +66,8 @@ def home(request):
     search_query = request.GET.get('search', '')
     hall_filter = request.GET.get('hall', '')
     genre_filter = request.GET.get('genre', '')
-    time_filter = request.GET.get('time', '')
+    time_from = request.GET.get('time_from', '')
+    time_to = request.GET.get('time_to', '')
 
     screenings = Screening.objects.filter(
         start_time__gt=local_now
@@ -84,25 +85,29 @@ def home(request):
     if genre_filter:
         screenings = screenings.filter(movie__genre=genre_filter)
 
-    if time_filter:
-        screenings = screenings.filter(start_time__hour=time_filter)
+    # Фильтрация по диапазону времени
+    if time_from:
+        # Преобразуем время из формата HH:MM в datetime
+        from datetime import datetime
+        time_from_obj = datetime.strptime(time_from, '%H:%M').time()
+        screenings = screenings.filter(start_time__time__gte=time_from_obj)
+
+    if time_to:
+        time_to_obj = datetime.strptime(time_to, '%H:%M').time()
+        screenings = screenings.filter(start_time__time__lte=time_to_obj)
 
     genres = Movie.objects.values_list('genre', flat=True).distinct()
-
-    time_slots = sorted(set(
-        s.start_time.hour for s in Screening.objects.all()
-    ))
 
     return render(request, 'ticket/home.html', {
         'screenings': screenings,
         'halls': Hall.objects.all(),
         'genres': genres,
-        'time_slots': time_slots,
         'current_filters': {
             'search': search_query,
             'hall': hall_filter,
             'genre': genre_filter,
-            'time': time_filter
+            'time_from': time_from,
+            'time_to': time_to
         }
     })
 
