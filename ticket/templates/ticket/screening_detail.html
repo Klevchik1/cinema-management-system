@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load ru_filters %}
 <html>
 <head>
     <title>{{ screening.movie.title }} - Кинотеатр Премьера</title>
@@ -302,11 +303,11 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <strong>Начало:</strong><br>
-                        {{ screening.start_time|date:"d M Y H:i" }}
+                        {{ screening.start_time|russian_datetime }}
                     </div>
                     <div class="info-item">
                         <strong>Окончание:</strong><br>
-                        {{ screening.end_time|date:"d M Y H:i" }}
+                        {{ screening.end_time|russian_datetime }}
                     </div>
                     <div class="info-item">
                         <strong>Зал:</strong><br>

@@ -59,11 +59,15 @@
             font-weight: bold;
         }
 
+        .input-with-icon {
+            position: relative;
+        }
+
         input[type="email"],
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 14px;
+            padding: 14px 45px 14px 15px;
             border: 2px solid #ff0000;
             border-radius: 8px;
             background: rgba(20, 20, 20, 0.8);
@@ -76,6 +80,25 @@
             border-color: #ffcc00;
             outline: none;
             box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #ffcc00;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: #ff0000;
+            transform: translateY(-50%) scale(1.1);
         }
 
         button[type="submit"] {
@@ -195,7 +218,19 @@
 
             <div class="form-group">
                 <label for="id_password">Пароль</label>
-                {{ form.password }}
+                <div class="input-with-icon">
+                    <input
+                        type="password"
+                        name="password"
+                        id="id_password"
+                        class="form-control"
+                        placeholder="Ваш пароль"
+                        required
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('id_password', this)">
+                        👁️
+                    </button>
+                </div>
                 {% if form.password.errors %}
                 <div class="form-errors">{{ form.password.errors }}</div>
                 {% endif %}
@@ -212,5 +247,65 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Функция переключения видимости пароля
+        function togglePassword(inputId, button) {
+            const passwordInput = document.getElementById(inputId);
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '🔒';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+
+        // Добавляем обработчики для существующих полей формы
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('id_password');
+            const emailInput = document.querySelector('input[name="email"]');
+
+            // Если поля уже есть (от Django формы), добавляем кнопку просмотра
+            if (passwordInput && !passwordInput.parentNode.querySelector('.password-toggle')) {
+                const toggleButton = document.createElement('button');
+                toggleButton.type = 'button';
+                toggleButton.className = 'password-toggle';
+                toggleButton.innerHTML = '👁️';
+                toggleButton.onclick = function() {
+                    togglePassword('id_password', this);
+                };
+
+                const inputContainer = document.createElement('div');
+                inputContainer.className = 'input-with-icon';
+                passwordInput.parentNode.insertBefore(inputContainer, passwordInput);
+                inputContainer.appendChild(passwordInput);
+                inputContainer.appendChild(toggleButton);
+            }
+
+            // Стилизуем email поле, если оно есть
+            if (emailInput) {
+                emailInput.style.padding = '14px 15px';
+                emailInput.style.width = '100%';
+                emailInput.style.border = '2px solid #ff0000';
+                emailInput.style.borderRadius = '8px';
+                emailInput.style.background = 'rgba(20, 20, 20, 0.8)';
+                emailInput.style.color = '#fff';
+                emailInput.style.fontSize = '16px';
+                emailInput.style.transition = 'all 0.3s';
+
+                emailInput.addEventListener('focus', function() {
+                    this.style.borderColor = '#ffcc00';
+                    this.style.outline = 'none';
+                    this.style.boxShadow = '0 0 10px rgba(255, 204, 0, 0.5)';
+                });
+
+                emailInput.addEventListener('blur', function() {
+                    this.style.borderColor = '#ff0000';
+                    this.style.boxShadow = 'none';
+                });
+            }
+        });
+    </script>
 </body>
 </html>

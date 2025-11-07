@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load ru_filters %}
 <html>
 <head>
     <title>Главная - Кинотеатр Премьера</title>
@@ -446,8 +447,8 @@
                                     <p>{{ screening.hall.rows }} рядов × {{ screening.hall.seats_per_row }} мест</p>
                                 </div>
                                 <div style="text-align: right;">
-                                    <p><strong>Начало:</strong> {{ screening.start_time|date:"d M H:i" }}</p>
-                                    <p><strong>Окончание:</strong> {{ screening.end_time|date:"d M H:i" }}</p>
+                                    <p><strong>Начало:</strong> {{ screening.start_time|russian_date_short }} {{ screening.start_time|time:"H:i" }}</p>
+                                    <p><strong>Окончание:</strong> {{ screening.end_time|russian_date_short }} {{ screening.end_time|time:"H:i" }}</p>
                                 </div>
                             </div>
                         </div>

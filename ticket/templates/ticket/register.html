@@ -59,11 +59,15 @@
             font-weight: bold;
         }
 
+        .input-with-icon {
+            position: relative;
+        }
+
         input[type="email"],
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 14px;
+            padding: 14px 45px 14px 15px;
             border: 2px solid #ff0000;
             border-radius: 8px;
             background: rgba(20, 20, 20, 0.8);
@@ -81,6 +85,25 @@
         .error-field {
             border-color: #ff6b6b !important;
             box-shadow: 0 0 10px rgba(255, 107, 107, 0.5) !important;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #ffcc00;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+
+        .password-toggle:hover {
+            color: #ff0000;
+            transform: translateY(-50%) scale(1.1);
         }
 
         button[type="submit"] {
@@ -316,14 +339,19 @@
 
             <div class="form-group">
                 <label for="id_password1">Пароль</label>
-                <input
-                    type="password"
-                    name="password1"
-                    id="id_password1"
-                    class="form-control {% if form.password1.errors %}error-field{% endif %}"
-                    placeholder="Придумайте пароль"
-                    required
-                >
+                <div class="input-with-icon">
+                    <input
+                        type="password"
+                        name="password1"
+                        id="id_password1"
+                        class="form-control {% if form.password1.errors %}error-field{% endif %}"
+                        placeholder="Придумайте пароль"
+                        required
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('id_password1', this)">
+                        👁️
+                    </button>
+                </div>
                 {% if form.password1.errors %}
                 <div class="form-errors">
                     {% for error in form.password1.errors %}
@@ -338,14 +366,19 @@
 
             <div class="form-group">
                 <label for="id_password2">Подтверждение пароля</label>
-                <input
-                    type="password"
-                    name="password2"
-                    id="id_password2"
-                    class="form-control {% if form.password2.errors %}error-field{% endif %}"
-                    placeholder="Повторите пароль"
-                    required
-                >
+                <div class="input-with-icon">
+                    <input
+                        type="password"
+                        name="password2"
+                        id="id_password2"
+                        class="form-control {% if form.password2.errors %}error-field{% endif %}"
+                        placeholder="Повторите пароль"
+                        required
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('id_password2', this)">
+                        👁️
+                    </button>
+                </div>
                 {% if form.password2.errors %}
                 <div class="form-errors">
                     {% for error in form.password2.errors %}
@@ -391,6 +424,18 @@
 
             e.target.value = value;
         });
+
+        // Функция переключения видимости пароля
+        function togglePassword(inputId, button) {
+            const passwordInput = document.getElementById(inputId);
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '🔒';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
 
         // Добавляем класс ошибки при загрузке страницы, если есть ошибки
         document.addEventListener('DOMContentLoaded', function() {
