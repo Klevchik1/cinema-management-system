@@ -1,17 +1,18 @@
-# models.py
+import logging
+logger = logging.getLogger(__name__)
 from audioop import reverse
-
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import timedelta
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator, validate_email
+import re
 import logging
 logger = logging.getLogger(__name__)
 import os
 from django.conf import settings
-from datetime import datetime
 
 
 class CustomUserManager(BaseUserManager):
@@ -38,7 +39,6 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractUser):
     username = None
     email = models.EmailField(max_length=100, unique=True)
-
     name = models.CharField(max_length=50)
     surname = models.CharField(max_length=50)
     number = models.CharField(max_length=50)
@@ -50,6 +50,17 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.email} ({self.name} {self.surname})"
+
+    def save(self, *args, **kwargs):
+        # Очищаем номер телефона перед сохранением
+        if self.number:
+            cleaned_number = re.sub(r'[^\d+]', '', self.number)
+            if cleaned_number.startswith('8'):
+                cleaned_number = '+7' + cleaned_number[1:]
+            elif cleaned_number.startswith('7'):
+                cleaned_number = '+' + cleaned_number
+            self.number = cleaned_number
+        super().save(*args, **kwargs)
 
 
 class Hall(models.Model):
