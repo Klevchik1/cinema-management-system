@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/screening/delete/<int:screening_id>/', views.screening_delete, name='screening_delete'),
     path('profile/', views.profile, name='profile'),
     path('download-ticket/<int:ticket_id>/', views.download_ticket_single, name='download_ticket_single'),
+    path('download-ticket-group/<str:group_id>/', views.download_ticket_group, name='download_ticket_group'),
 ]
 
 if settings.DEBUG:

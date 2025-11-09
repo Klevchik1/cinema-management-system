@@ -1,28 +1,26 @@
 from django.shortcuts import render
-
-# Create your views here.
-from .forms import RegistrationForm, LoginForm, UserUpdateForm
-from django.contrib.auth import login, authenticate
+from .forms import RegistrationForm, LoginForm, UserUpdateForm, CustomPasswordChangeForm
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from .models import Screening, Ticket, Seat, Movie, Hall
+from .models import Screening, Ticket, Seat, Movie, Hall, User
 from django.utils import timezone
 from .utils import generate_ticket_pdf
 from django.http import HttpResponse
 import json
-from django.contrib.auth import logout
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import MovieForm, HallForm, ScreeningForm
 from django.contrib.auth.decorators import login_required
 from datetime import timedelta
-from django.db.models import Q
+from django.db.models import Q, Count
 import logging
 from datetime import datetime
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
-from .forms import CustomPasswordChangeForm, UserUpdateForm
+import uuid
+from django.urls import reverse
+
 logger = logging.getLogger(__name__)
+
 
 @staff_member_required
 def admin_dashboard(request):
@@ -30,15 +28,8 @@ def admin_dashboard(request):
 
 
 def register(request):
-    print("=== REGISTER VIEW CALLED ===")
-    print(f"Method: {request.method}")
-
     if request.method == 'POST':
-        print("POST data:", request.POST)
         form = RegistrationForm(request.POST)
-        print("Form is valid:", form.is_valid())
-        print("Form errors:", form.errors)
-
         if form.is_valid():
             user = form.save()
             login(request, user)
@@ -48,8 +39,6 @@ def register(request):
             messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = RegistrationForm()
-        print("GET request - new form created")
-
     return render(request, 'ticket/register.html', {'form': form})
 
 
@@ -101,7 +90,6 @@ def home(request):
     if genre_filter:
         screenings = screenings.filter(movie__genre=genre_filter)
 
-    # Фильтрация по диапазону времени
     if time_from:
         time_from_obj = datetime.strptime(time_from, '%H:%M').time()
         screenings = screenings.filter(start_time__time__gte=time_from_obj)
@@ -110,7 +98,6 @@ def home(request):
         time_to_obj = datetime.strptime(time_to, '%H:%M').time()
         screenings = screenings.filter(start_time__time__lte=time_to_obj)
 
-    # Фильтрация по диапазону дат (если нужно)
     if date_from:
         date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
         screenings = screenings.filter(start_time__date__gte=date_from_obj)
@@ -146,9 +133,7 @@ def user_logout(request):
 @login_required
 def screening_detail(request, screening_id):
     screening = get_object_or_404(Screening, pk=screening_id)
-
     seats = Seat.objects.filter(hall=screening.hall).order_by('row', 'number')
-
     booked_tickets = Ticket.objects.filter(screening=screening)
     booked_seat_ids = [ticket.seat.id for ticket in booked_tickets]
 
@@ -171,7 +156,6 @@ def book_tickets(request):
     screening_id = request.POST.get('screening_id')
     selected_seats = request.POST.get('selected_seats')
 
-    # Проверяем, что selected_seats не пустое
     if not selected_seats:
         messages.error(request, "Выберите хотя бы одно место.")
         return redirect('screening_detail', screening_id=screening_id)
@@ -195,171 +179,131 @@ def book_tickets(request):
             messages.error(request, f"Место {seat.row}-{seat.number} уже занято.")
             return redirect('screening_detail', screening_id=screening_id)
 
-    # Создаем билеты
+    # Создаем группу билетов с одним group_id
+    group_id = str(uuid.uuid4())
+
+    # Создаем билеты с одним group_id
     tickets = []
     for seat_id in seat_ids:
         seat = get_object_or_404(Seat, pk=seat_id)
         ticket = Ticket.objects.create(
             user=request.user,
             screening=screening,
-            seat=seat
+            seat=seat,
+            group_id=group_id
         )
         tickets.append(ticket)
 
-    request.session['booked_ticket_ids'] = [t.id for t in tickets]
-
-    messages.success(request, f"Вы успешно купили {len(tickets)} место(а)! Скачайте ваш билет здесь:")
-    return redirect('screening_detail', screening_id=screening_id)
-
-def user_logout(request):
-    logout(request)
-    return redirect('home')
+    # Перенаправляем с флагом успешной покупки
+    return redirect(f'{reverse("screening_detail", args=[screening_id])}?purchase_success=true&group_id={group_id}')
 
 
+@login_required
 def download_ticket(request):
-    if 'booked_ticket_ids' not in request.session:
+    # Получаем group_id из GET параметров
+    group_id = request.GET.get('group_id')
+
+    if not group_id:
         return redirect('home')
 
-    ticket_ids = request.session['booked_ticket_ids']
-    tickets = Ticket.objects.filter(id__in=ticket_ids)
+    # Получаем все билеты из группы
+    tickets = Ticket.objects.filter(group_id=group_id, user=request.user)
 
     if not tickets.exists():
         return redirect('home')
 
     pdf_buffer = generate_ticket_pdf(tickets)
 
-    del request.session['booked_ticket_ids']
-
     response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
-    filename = f"билеты_{tickets[0].screening.movie.title}.pdf"
+    filename = f"билет_{tickets[0].screening.movie.title}_{group_id[:8]}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
-@staff_member_required
-def movie_manage(request):
-    movies = Movie.objects.all()
-    return render(request, 'ticket/admin/movie_manage.html', {'movies': movies})
 
-@staff_member_required
-def movie_add(request):
-    if request.method == 'POST':
-        form = MovieForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('movie_manage')
+@login_required
+def download_ticket_single(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
+
+    # Если билет входит в группу, скачиваем всю группу
+    if ticket.group_id:
+        tickets = Ticket.objects.filter(group_id=ticket.group_id, user=request.user)
     else:
-        form = MovieForm()
-    return render(request, 'ticket/admin/movie_form.html', {'form': form})
+        tickets = [ticket]
 
-@staff_member_required
-def movie_edit(request, movie_id):
-    movie = get_object_or_404(Movie, pk=movie_id)
-    if request.method == 'POST':
-        form = MovieForm(request.POST, instance=movie)
-        if form.is_valid():
-            form.save()
-            return redirect('movie_manage')
-    else:
-        form = MovieForm(instance=movie)
-    return render(request, 'ticket/admin/movie_form.html', {'form': form})
+    try:
+        pdf_buffer = generate_ticket_pdf(tickets)
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
 
-@staff_member_required
-def movie_delete(request, movie_id):
-    movie = get_object_or_404(Movie, pk=movie_id)
-    if request.method == 'POST':
-        movie.delete()
-        return redirect('movie_manage')
-    return render(request, 'ticket/admin/movie_confirm_delete.html', {'movie': movie})
+        if len(tickets) > 1:
+            filename = f"билет_{ticket.screening.movie.title}_{ticket.group_id[:8]}.pdf"
+        else:
+            filename = f"билет_{ticket.screening.movie.title}_{ticket.id}.pdf"
 
-@staff_member_required
-def hall_manage(request):
-    halls = Hall.objects.all()
-    return render(request, 'ticket/admin/hall_manage.html', {'halls': halls})
-
-@staff_member_required
-def hall_add(request):
-    if request.method == 'POST':
-        form = HallForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('hall_manage')
-    else:
-        form = HallForm()
-    return render(request, 'ticket/admin/hall_form.html', {'form': form})
-
-@staff_member_required
-def hall_edit(request, hall_id):
-    hall = get_object_or_404(Hall, pk=hall_id)
-    if request.method == 'POST':
-        form = HallForm(request.POST, instance=hall)
-        if form.is_valid():
-            form.save()
-            return redirect('hall_manage')
-    else:
-        form = MovieForm(instance=hall)
-    return render(request, 'ticket/admin/hall_form.html', {'form': form})
-
-@staff_member_required
-def hall_delete(request, hall_id):
-    hall = get_object_or_404(Hall, pk=hall_id)
-    if request.method == 'POST':
-        hall.delete()
-        return redirect('hall_manage')
-    return render(request, 'ticket/admin/hall_confirm_delete.html', {'hall': hall})
-
-@staff_member_required
-def screening_manage(request):
-    screening = Screening.objects.all()
-    return render(request, 'ticket/admin/screening_manage.html', {'screening': screening})
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        logger.error(f"Ошибка генерации PDF: {str(e)}")
+        messages.error(request, "Ошибка при генерации билета. Пожалуйста, попробуйте позже.")
+        return redirect('profile')
 
 
-@staff_member_required
-def screening_add(request):
-    if request.method == 'POST':
-        form = ScreeningForm(request.POST)
-        if form.is_valid():
-            screening = form.save(commit=False)
+@login_required
+def download_ticket_group(request, group_id):
+    tickets = Ticket.objects.filter(group_id=group_id, user=request.user)
 
-            if not screening.end_time and screening.movie and screening.start_time:
-                screening.end_time = screening.start_time + screening.movie.duration + timedelta(minutes=10)
+    if not tickets.exists():
+        messages.error(request, "Билеты не найдены.")
+        return redirect('profile')
 
-            screening.save()
-            return redirect('screening_manage')
-    else:
-        form = ScreeningForm()
-    return render(request, 'ticket/admin/screening_form.html', {'form': form})
-
-
-@staff_member_required
-def screening_edit(request, screening_id):
-    screening = get_object_or_404(Screening, pk=screening_id)
-    if request.method == 'POST':
-        form = ScreeningForm(request.POST, instance=screening)
-        if form.is_valid():
-            updated_screening = form.save(commit=False)
-
-            if updated_screening.movie and updated_screening.start_time:
-                updated_screening.end_time = updated_screening.start_time + updated_screening.movie.duration + timedelta(
-                    minutes=10)
-
-            updated_screening.save()
-            return redirect('screening_manage')
-    else:
-        form = ScreeningForm(instance=screening)
-    return render(request, 'ticket/admin/screening_form.html', {'form': form})
-
-@staff_member_required
-def screening_delete(request, screening_id):
-    screening = get_object_or_404(Screening, pk=screening_id)
-    if request.method == 'POST':
-        screening.delete()
-        return redirect('screening_manage')
-    return render(request, 'ticket/admin/screening_confirm_delete.html', {'screening': screening})
+    try:
+        pdf_buffer = generate_ticket_pdf(tickets)
+        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+        filename = f"билет_{tickets[0].screening.movie.title}_{group_id[:8]}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        logger.error(f"Ошибка генерации PDF: {str(e)}")
+        messages.error(request, "Ошибка при генерации билета. Пожалуйста, попробуйте позже.")
+        return redirect('profile')
 
 
 @login_required
 def profile(request):
-    tickets = Ticket.objects.filter(user=request.user).order_by('-purchase_date')
+    # Получаем все билеты пользователя
+    all_tickets = Ticket.objects.filter(user=request.user).select_related(
+        'screening__movie', 'screening__hall', 'seat'
+    ).order_by('-purchase_date')
+
+    # Группируем билеты по group_id вручную
+    groups_dict = {}
+
+    for ticket in all_tickets:
+        group_id = ticket.group_id if ticket.group_id else f"single_{ticket.id}"
+
+        if group_id not in groups_dict:
+            groups_dict[group_id] = {
+                'group_id': group_id,
+                'movie_title': ticket.screening.movie.title,
+                'movie_poster': ticket.screening.movie.poster,
+                'hall_name': ticket.screening.hall.name,
+                'start_time': ticket.screening.start_time,
+                'purchase_date': ticket.purchase_date,
+                'screening': ticket.screening,
+                'seats': [],
+                'ticket_count': 0,
+                'total_price': 0
+            }
+
+        # Добавляем информацию о месте
+        groups_dict[group_id]['seats'].append({
+            'row': ticket.seat.row,
+            'number': ticket.seat.number
+        })
+        groups_dict[group_id]['ticket_count'] += 1
+        groups_dict[group_id]['total_price'] += ticket.screening.price
+
+    # Преобразуем словарь в список и сортируем по дате
+    ticket_groups = sorted(groups_dict.values(), key=lambda x: x['purchase_date'], reverse=True)
 
     profile_form = UserUpdateForm(instance=request.user)
     password_form = CustomPasswordChangeForm(user=request.user)
@@ -383,7 +327,6 @@ def profile(request):
             password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
             if password_form.is_valid():
                 user = password_form.save()
-                # Обновляем сессию, чтобы пользователь не разлогинился
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Пароль успешно изменен!')
                 return redirect('profile')
@@ -396,21 +339,133 @@ def profile(request):
     return render(request, 'ticket/profile.html', {
         'form': profile_form,
         'password_form': password_form,
-        'tickets': tickets
+        'ticket_groups': ticket_groups
     })
 
 
-@login_required
-def download_ticket_single(request, ticket_id):
-    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
+# Остальные admin views остаются без изменений
+@staff_member_required
+def movie_manage(request):
+    movies = Movie.objects.all()
+    return render(request, 'ticket/admin/movie_manage.html', {'movies': movies})
 
-    try:
-        pdf_buffer = generate_ticket_pdf([ticket])
-        response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
-        filename = f"билет_{ticket.screening.movie.title}_{ticket.id}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-    except Exception as e:
-        logger.error(f"Ошибка генерации PDF: {str(e)}")
-        messages.error(request, "Ошибка при генерации билета. Пожалуйста, попробуйте позже.")
-        return redirect('profile')
+
+@staff_member_required
+def movie_add(request):
+    if request.method == 'POST':
+        form = MovieForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('movie_manage')
+    else:
+        form = MovieForm()
+    return render(request, 'ticket/admin/movie_form.html', {'form': form})
+
+
+@staff_member_required
+def movie_edit(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    if request.method == 'POST':
+        form = MovieForm(request.POST, request.FILES, instance=movie)
+        if form.is_valid():
+            form.save()
+            return redirect('movie_manage')
+    else:
+        form = MovieForm(instance=movie)
+    return render(request, 'ticket/admin/movie_form.html', {'form': form})
+
+
+@staff_member_required
+def movie_delete(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    if request.method == 'POST':
+        movie.delete()
+        return redirect('movie_manage')
+    return render(request, 'ticket/admin/movie_confirm_delete.html', {'movie': movie})
+
+
+@staff_member_required
+def hall_manage(request):
+    halls = Hall.objects.all()
+    return render(request, 'ticket/admin/hall_manage.html', {'halls': halls})
+
+
+@staff_member_required
+def hall_add(request):
+    if request.method == 'POST':
+        form = HallForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('hall_manage')
+    else:
+        form = HallForm()
+    return render(request, 'ticket/admin/hall_form.html', {'form': form})
+
+
+@staff_member_required
+def hall_edit(request, hall_id):
+    hall = get_object_or_404(Hall, pk=hall_id)
+    if request.method == 'POST':
+        form = HallForm(request.POST, instance=hall)
+        if form.is_valid():
+            form.save()
+            return redirect('hall_manage')
+    else:
+        form = HallForm(instance=hall)
+    return render(request, 'ticket/admin/hall_form.html', {'form': form})
+
+
+@staff_member_required
+def hall_delete(request, hall_id):
+    hall = get_object_or_404(Hall, pk=hall_id)
+    if request.method == 'POST':
+        hall.delete()
+        return redirect('hall_manage')
+    return render(request, 'ticket/admin/hall_confirm_delete.html', {'hall': hall})
+
+
+@staff_member_required
+def screening_manage(request):
+    screenings = Screening.objects.all()
+    return render(request, 'ticket/admin/screening_manage.html', {'screenings': screenings})
+
+
+@staff_member_required
+def screening_add(request):
+    if request.method == 'POST':
+        form = ScreeningForm(request.POST)
+        if form.is_valid():
+            screening = form.save(commit=False)
+            if not screening.end_time and screening.movie and screening.start_time:
+                screening.end_time = screening.start_time + screening.movie.duration + timedelta(minutes=10)
+            screening.save()
+            return redirect('screening_manage')
+    else:
+        form = ScreeningForm()
+    return render(request, 'ticket/admin/screening_form.html', {'form': form})
+
+
+@staff_member_required
+def screening_edit(request, screening_id):
+    screening = get_object_or_404(Screening, pk=screening_id)
+    if request.method == 'POST':
+        form = ScreeningForm(request.POST, instance=screening)
+        if form.is_valid():
+            updated_screening = form.save(commit=False)
+            if updated_screening.movie and updated_screening.start_time:
+                updated_screening.end_time = updated_screening.start_time + updated_screening.movie.duration + timedelta(
+                    minutes=10)
+            updated_screening.save()
+            return redirect('screening_manage')
+    else:
+        form = ScreeningForm(instance=screening)
+    return render(request, 'ticket/admin/screening_form.html', {'form': form})
+
+
+@staff_member_required
+def screening_delete(request, screening_id):
+    screening = get_object_or_404(Screening, pk=screening_id)
+    if request.method == 'POST':
+        screening.delete()
+        return redirect('screening_manage')
+    return render(request, 'ticket/admin/screening_confirm_delete.html', {'screening': screening})

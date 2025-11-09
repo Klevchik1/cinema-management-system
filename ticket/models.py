@@ -138,12 +138,19 @@ class Ticket(models.Model):
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
     purchase_date = models.DateTimeField(auto_now_add=True)
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
+    group_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
 
     class Meta:
         unique_together = ('screening', 'seat')
 
     def get_pdf_url(self):
         return reverse('download_ticket_single', args=[self.id])
+
+    def get_group_tickets(self):
+        """Получить все билеты из той же группы"""
+        if self.group_id:
+            return Ticket.objects.filter(group_id=self.group_id)
+        return Ticket.objects.filter(id=self.id)
 
 @receiver(post_save, sender=Hall)
 def create_hall_seats(sender, instance, created, **kwargs):
