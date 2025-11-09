@@ -1,0 +1,163 @@
+<!-- ticket/templates/ticket/screening_partial.html -->
+<div class="screening-details">
+    <h2 style="color: #ffcc00; margin-bottom: 20px; text-align: center;">
+        Информация о сеансе
+    </h2>
+
+    <div class="info-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
+        <div class="info-item" style="background: rgba(20, 20, 20, 0.7); padding: 15px; border-radius: 8px;">
+            <strong>Начало:</strong><br>
+            {{ screening.start_time|date:"d F Y H:i" }}
+        </div>
+        <div class="info-item" style="background: rgba(20, 20, 20, 0.7); padding: 15px; border-radius: 8px;">
+            <strong>Окончание:</strong><br>
+            {{ screening.end_time|date:"d F Y H:i" }}
+        </div>
+        <div class="info-item" style="background: rgba(20, 20, 20, 0.7); padding: 15px; border-radius: 8px;">
+            <strong>Зал:</strong><br>
+            {{ screening.hall.name }}
+        </div>
+        <div class="info-item" style="background: rgba(20, 20, 20, 0.7); padding: 15px; border-radius: 8px;">
+            <strong>Цена за место:</strong><br>
+            {{ screening.price }} ₽
+        </div>
+    </div>
+
+    <!-- Схема зала -->
+    <div class="cinema-hall">
+        <div class="screen" style="background: #333; color: white; padding: 15px; margin-bottom: 30px; border-radius: 5px; font-size: 20px; font-weight: bold; box-shadow: 0 0 10px rgba(255, 204, 0, 0.5); text-align: center;">
+            ЭКРАН
+        </div>
+
+        <div id="selected-seats-info-{{ screening.id }}" style="margin: 20px 0; font-size: 20px; font-weight: bold; color: #ffcc00; text-align: center;">
+            Выбрано мест: 0
+        </div>
+
+        {% for row, seats in rows.items %}
+        <div class="row" style="display: flex; justify-content: center; margin-bottom: 10px;">
+            <div class="row-label" style="width: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #ffcc00;">
+                Ряд {{ row }}
+            </div>
+            {% for seat in seats %}
+            <div class="seat {% if seat.id in booked_seat_ids %}booked{% endif %}"
+                 data-seat-id="{{ seat.id }}"
+                 data-row="{{ seat.row }}"
+                 data-number="{{ seat.number }}"
+                 onclick="selectSeatPartial(this, {{ screening.id }})"
+                 style="width: 45px; height: 45px; margin: 0 5px; display: flex; justify-content: center; align-items: center; background-color: {% if seat.id in booked_seat_ids %}#f44336{% else %}#4CAF50{% endif %}; color: white; cursor: {% if seat.id in booked_seat_ids %}not-allowed{% else %}pointer{% endif %}; border-radius: 5px; position: relative; transition: all 0.2s; font-weight: bold; user-select: none; opacity: {% if seat.id in booked_seat_ids %}0.7{% else %}1{% endif %};">
+                {{ seat.row }}-{{ seat.number }}
+                <span class="seat-number" style="font-size: 10px; position: absolute; bottom: 2px; right: 2px;">
+                    {{ seat.number }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Форма бронирования -->
+    <div class="action-buttons" style="margin-top: 30px; text-align: center;">
+        <form method="post" action="{% url 'book_tickets' %}">
+            {% csrf_token %}
+            <input type="hidden" name="screening_id" value="{{ screening.id }}">
+            <input type="hidden" name="selected_seats" id="selected-seats-input-{{ screening.id }}" value="">
+            <button type="submit" class="btn-buy" id="book-button-{{ screening.id }}" disabled
+                    style="display: inline-block; background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%); color: #fff; padding: 12px 25px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; margin-top: 15px; opacity: 0.6; cursor: not-allowed;">
+                Купить выбранные билеты
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Глобальные переменные для каждого сеанса
+    let selectedSeats{{ screening.id }} = [];
+    const selectedSeatsInfo{{ screening.id }} = document.getElementById('selected-seats-info-{{ screening.id }}');
+    const selectedSeatsInput{{ screening.id }} = document.getElementById('selected-seats-input-{{ screening.id }}');
+    const bookButton{{ screening.id }} = document.getElementById('book-button-{{ screening.id }}');
+
+    // Получаем цену из Django и преобразуем в число
+    const priceText{{ screening.id }} = '{{ screening.price }}';
+    const screeningPrice{{ screening.id }} = parseFloat(priceText{{ screening.id }}.replace(',', '.'));
+
+    // Функция для выбора места (для частичного представления)
+    function selectSeatPartial(seatElement, screeningId) {
+        // Проверяем, не занято ли место
+        if (seatElement.classList.contains('booked')) {
+            return;
+        }
+
+        const seatId = seatElement.getAttribute('data-seat-id');
+        const seatRow = seatElement.getAttribute('data-row');
+        const seatNumber = seatElement.getAttribute('data-number');
+
+        // Используем соответствующие переменные для этого сеанса
+        let selectedSeats, selectedSeatsInfo, selectedSeatsInput, bookButton, screeningPrice;
+
+        switch(screeningId) {
+            case {{ screening.id }}:
+                selectedSeats = selectedSeats{{ screening.id }};
+                selectedSeatsInfo = selectedSeatsInfo{{ screening.id }};
+                selectedSeatsInput = selectedSeatsInput{{ screening.id }};
+                bookButton = bookButton{{ screening.id }};
+                screeningPrice = screeningPrice{{ screening.id }};
+                break;
+        }
+
+        // Проверяем, выбрано ли уже это место
+        const seatIndex = selectedSeats.indexOf(seatId);
+
+        if (seatIndex === -1) {
+            // Добавляем место
+            selectedSeats.push(seatId);
+            seatElement.classList.add('selected');
+            seatElement.style.backgroundColor = '#2196F3';
+            seatElement.style.transform = 'scale(1.1)';
+            seatElement.style.boxShadow = '0 0 10px rgba(33, 150, 243, 0.7)';
+        } else {
+            // Убираем место
+            selectedSeats.splice(seatIndex, 1);
+            seatElement.classList.remove('selected');
+            seatElement.style.backgroundColor = '#4CAF50';
+            seatElement.style.transform = 'scale(1)';
+            seatElement.style.boxShadow = 'none';
+        }
+
+        // Обновляем информацию о выбранных местах
+        updateSelectedSeatsInfoPartial(selectedSeats, selectedSeatsInfo, selectedSeatsInput, bookButton, screeningPrice);
+    }
+
+    // Функция обновления информации о выбранных местах (для частичного представления)
+    function updateSelectedSeatsInfoPartial(selectedSeats, selectedSeatsInfo, selectedSeatsInput, bookButton, screeningPrice) {
+        const count = selectedSeats.length;
+        const totalPrice = count * screeningPrice;
+
+        if (count === 0) {
+            selectedSeatsInfo.textContent = 'Выбрано мест: 0';
+            bookButton.disabled = true;
+            bookButton.style.opacity = '0.6';
+            bookButton.style.cursor = 'not-allowed';
+        } else {
+            selectedSeatsInfo.textContent = `Выбрано мест: ${count}, Общая стоимость: ${totalPrice.toFixed(2)} ₽`;
+            bookButton.disabled = false;
+            bookButton.style.opacity = '1';
+            bookButton.style.cursor = 'pointer';
+        }
+
+        // Обновляем скрытое поле формы
+        if (selectedSeatsInput) {
+            selectedSeatsInput.value = JSON.stringify(selectedSeats);
+        }
+    }
+
+    // Инициализация для этого сеанса
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedSeatsInfoPartial(
+            selectedSeats{{ screening.id }},
+            selectedSeatsInfo{{ screening.id }},
+            selectedSeatsInput{{ screening.id }},
+            bookButton{{ screening.id }},
+            screeningPrice{{ screening.id }}
+        );
+    });
+</script>

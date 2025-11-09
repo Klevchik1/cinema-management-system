@@ -18,6 +18,7 @@ import logging
 from datetime import datetime
 import uuid
 from django.urls import reverse
+from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -74,42 +75,58 @@ def home(request):
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
 
-    screenings = Screening.objects.filter(
-        start_time__gt=local_now
-    ).order_by('start_time')
+    # Получаем фильмы с предварительной загрузкой сеансов
+    movies = Movie.objects.prefetch_related('screening_set__hall').all()
+
+    # Применяем фильтры к сеансам
+    screenings_filter = Q(start_time__gt=local_now)
 
     if search_query:
-        screenings = screenings.filter(
-            Q(movie__title__icontains=search_query) |
-            Q(movie__description__icontains=search_query)
+        movies = movies.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query)
         )
 
-    if hall_filter:
-        screenings = screenings.filter(hall_id=hall_filter)
-
     if genre_filter:
-        screenings = screenings.filter(movie__genre=genre_filter)
+        movies = movies.filter(genre=genre_filter)
+
+    if hall_filter:
+        screenings_filter &= Q(hall_id=hall_filter)
 
     if time_from:
         time_from_obj = datetime.strptime(time_from, '%H:%M').time()
-        screenings = screenings.filter(start_time__time__gte=time_from_obj)
+        screenings_filter &= Q(start_time__time__gte=time_from_obj)
 
     if time_to:
         time_to_obj = datetime.strptime(time_to, '%H:%M').time()
-        screenings = screenings.filter(start_time__time__lte=time_to_obj)
+        screenings_filter &= Q(start_time__time__lte=time_to_obj)
 
     if date_from:
         date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-        screenings = screenings.filter(start_time__date__gte=date_from_obj)
+        screenings_filter &= Q(start_time__date__gte=date_from_obj)
 
     if date_to:
         date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-        screenings = screenings.filter(start_time__date__lte=date_to_obj)
+        screenings_filter &= Q(start_time__date__lte=date_to_obj)
+
+    # Собираем данные для каждого фильма
+    movies_data = []
+    for movie in movies:
+        upcoming_screenings = movie.screening_set.filter(screenings_filter).order_by('start_time')[:3]
+
+        # Если есть фильтры по залу/времени и нет подходящих сеансов - пропускаем фильм
+        if (hall_filter or time_from or time_to or date_from or date_to) and not upcoming_screenings:
+            continue
+
+        movies_data.append({
+            'movie': movie,
+            'upcoming_screenings': upcoming_screenings
+        })
 
     genres = Movie.objects.values_list('genre', flat=True).distinct()
 
     return render(request, 'ticket/home.html', {
-        'screenings': screenings,
+        'movies': movies_data,
         'halls': Hall.objects.all(),
         'genres': genres,
         'current_filters': {
@@ -469,3 +486,51 @@ def screening_delete(request, screening_id):
         screening.delete()
         return redirect('screening_manage')
     return render(request, 'ticket/admin/screening_confirm_delete.html', {'screening': screening})
+
+
+def movie_detail(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    local_now = timezone.localtime(timezone.now())
+
+    # Предстоящие сеансы
+    upcoming_screenings = Screening.objects.filter(
+        movie=movie,
+        start_time__gt=local_now
+    ).order_by('start_time')
+
+    # Прошедшие сеансы (последние 2)
+    past_screenings = Screening.objects.filter(
+        movie=movie,
+        start_time__lte=local_now
+    ).order_by('-start_time')[:2]
+
+    return render(request, 'ticket/movie_detail.html', {
+        'movie': movie,
+        'upcoming_screenings': upcoming_screenings,
+        'past_screenings': past_screenings,
+    })
+
+
+def screening_partial(request, screening_id):
+    """Возвращает HTML для частичной информации о сеансе"""
+    screening = get_object_or_404(Screening, pk=screening_id)
+
+    # Получаем занятые места для этого сеанса
+    booked_tickets = Ticket.objects.filter(screening=screening)
+    booked_seat_ids = [ticket.seat.id for ticket in booked_tickets]
+
+    # Получаем места зала
+    seats = Seat.objects.filter(hall=screening.hall).order_by('row', 'number')
+
+    # Группируем по рядам
+    rows = {}
+    for seat in seats:
+        if seat.row not in rows:
+            rows[seat.row] = []
+        rows[seat.row].append(seat)
+
+    return render(request, 'ticket/screening_partial.html', {
+        'screening': screening,
+        'rows': rows,
+        'booked_seat_ids': booked_seat_ids
+    })
