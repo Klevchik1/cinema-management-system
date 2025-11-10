@@ -67,6 +67,7 @@ class Hall(models.Model):
     name = models.CharField(max_length=50)
     rows = models.IntegerField()
     seats_per_row = models.IntegerField()
+    description = models.TextField(blank=True, null=True)  # Добавьте эту строку
 
     def save(self, *args, **kwargs):
         logger.info(f"Сохранение зала {self.name}, новый: {self._state.adding}")
