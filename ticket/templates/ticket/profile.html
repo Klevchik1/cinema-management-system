@@ -526,6 +526,44 @@
                         </div>
                     </form>
                 </div>
+                <div class="telegram-section" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ffcc00;">
+                    <h3 class="section-title">🤖 Telegram Уведомления</h3>
+
+                    {% if telegram_connected %}
+                    <div class="telegram-status" style="background: rgba(0, 128, 0, 0.2); padding: 15px; border-radius: 8px; border: 1px solid #008000;">
+                        <p style="color: #00ff00; margin-bottom: 10px;">
+                            ✅ Telegram аккаунт привязан: @{{ telegram_username }}
+                        </p>
+                        <p style="color: #ccc;">
+                            Вы будете получать уведомления о покупках билетов и напоминания о сеансах.
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="telegram-connect" style="background: rgba(255, 204, 0, 0.1); padding: 20px; border-radius: 8px; border: 1px solid #ffcc00;">
+                        <h4 style="color: #ffcc00; margin-bottom: 15px;">Привязать Telegram аккаунт</h4>
+                        <p style="color: #ccc; margin-bottom: 15px;">
+                            Получайте уведомления о покупках билетов прямо в Telegram!
+                        </p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="telegram_connect">
+                            <button type="submit" class="btn-buy" style="background: linear-gradient(135deg, #0088cc 0%, #005599 100%);">
+                                Получить код привязки
+                            </button>
+                        </form>
+
+                        <div style="margin-top: 15px; font-size: 14px; color: #aaa;">
+                            <p><strong>После получения кода:</strong></p>
+                            <ol style="padding-left: 20px; margin-top: 10px;">
+                                <li>Перейдите к <a href="https://t.me/CinemaaPremierBot" target="_blank" style="color: #ffcc00;">@CinemaaPremierBot</a></li>
+                                <li>Отправьте команду /start</li>
+                                <li>Введите полученный код подтверждения</li>
+                            </ol>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Правая колонка - история билетов -->

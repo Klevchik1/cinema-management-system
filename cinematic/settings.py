@@ -144,3 +144,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Настройки сессии
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 86400  # 1 день в секундах
+
+# Telegram Bot Settings
+TELEGRAM_BOT_TOKEN = '8221712478:AAE91NhmOSibbiv4LApz3JUqHOxiVXj1-Sg'
+TELEGRAM_WEBHOOK_URL = ''  # Для продакшена
+
+# Для тестирования можно использовать polling вместо webhook
+USE_TELEGRAM_POLLING = True

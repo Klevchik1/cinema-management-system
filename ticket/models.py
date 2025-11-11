@@ -36,12 +36,19 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+
 class User(AbstractUser):
     username = None
     email = models.EmailField(max_length=100, unique=True)
     name = models.CharField(max_length=50)
     surname = models.CharField(max_length=50)
     number = models.CharField(max_length=50)
+
+    # Telegram fields
+    telegram_chat_id = models.CharField(max_length=20, blank=True, null=True)
+    telegram_username = models.CharField(max_length=100, blank=True, null=True)
+    is_telegram_verified = models.BooleanField(default=False)
+    telegram_verification_code = models.CharField(max_length=10, blank=True, null=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'surname', 'number']
@@ -51,8 +58,18 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.email} ({self.name} {self.surname})"
 
+    def generate_verification_code(self):
+        """Генерация кода подтверждения"""
+        import random
+        import string
+        code = ''.join(random.choices(string.digits, k=6))
+        self.telegram_verification_code = code
+        self.is_telegram_verified = False  # Сбрасываем статус верификации
+        self.save()
+        logger.info(f"Generated verification code {code} for user {self.email}")
+        return code
+
     def save(self, *args, **kwargs):
-        # Очищаем номер телефона перед сохранением
         if self.number:
             cleaned_number = re.sub(r'[^\d+]', '', self.number)
             if cleaned_number.startswith('8'):

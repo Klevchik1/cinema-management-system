@@ -19,6 +19,7 @@ from datetime import datetime
 import uuid
 from django.urls import reverse
 from django.template.loader import render_to_string
+from .telegram_bot.bot import get_bot
 
 logger = logging.getLogger(__name__)
 
@@ -174,13 +175,18 @@ def book_tickets(request):
     screening_id = request.POST.get('screening_id')
     selected_seats = request.POST.get('selected_seats')
 
+    print(f"DEBUG: screening_id = {screening_id}")  # Для отладки
+    print(f"DEBUG: selected_seats = {selected_seats}")  # Для отладки
+
     if not selected_seats:
         messages.error(request, "Выберите хотя бы одно место.")
         return redirect('screening_detail', screening_id=screening_id)
 
     try:
         seat_ids = json.loads(selected_seats)
-    except json.JSONDecodeError:
+        print(f"DEBUG: parsed seat_ids = {seat_ids}")  # Для отладки
+    except json.JSONDecodeError as e:
+        print(f"DEBUG: JSON decode error: {e}")  # Для отладки
         messages.error(request, "Ошибка при обработке выбранных мест. Попробуйте снова.")
         return redirect('screening_detail', screening_id=screening_id)
 
@@ -189,6 +195,7 @@ def book_tickets(request):
         return redirect('screening_detail', screening_id=screening_id)
 
     screening = get_object_or_404(Screening, pk=screening_id)
+    print(f"DEBUG: screening found = {screening}")  # Для отладки
 
     # Проверяем доступность мест
     for seat_id in seat_ids:
@@ -211,8 +218,21 @@ def book_tickets(request):
             group_id=group_id
         )
         tickets.append(ticket)
+        print(f"DEBUG: created ticket for seat {seat.row}-{seat.number}")  # Для отладки
 
-    # Перенаправляем с флагом успешной покупки
+    # Отправляем уведомление в Telegram
+    if tickets:
+        try:
+            from ticket.telegram_bot.bot import get_bot
+            bot = get_bot()
+            if bot and request.user.is_telegram_verified:
+                import asyncio
+                asyncio.run(bot.send_ticket_notification(request.user, tickets))
+        except Exception as e:
+            print(f"DEBUG: Telegram notification error: {e}")  # Для отладки
+            # Не прерываем процесс из-за ошибки уведомления
+
+    messages.success(request, f"Билеты успешно куплены! Вы можете скачать их в личном кабинете.")
     return redirect(f'{reverse("screening_detail", args=[screening_id])}?purchase_success=true&group_id={group_id}')
 
 
@@ -354,10 +374,34 @@ def profile(request):
                         password_form[field].field.widget.attrs['class'] = 'form-control error-field'
                 messages.error(request, 'Пожалуйста, исправьте ошибки в форме смены пароля.')
 
+
+        elif form_type == 'telegram_connect':
+
+            # Генерация кода для привязки Telegram
+
+            verification_code = request.user.generate_verification_code()
+
+            messages.success(
+
+                request,
+
+                f'Код для привязки Telegram: {verification_code}. Отправьте его боту @CinemaaPremierBot'
+
+            )
+
+            return redirect('profile')
+
+    # Добавляем информацию о Telegram в контекст
+    telegram_connected = request.user.is_telegram_verified
+    telegram_username = request.user.telegram_username
+
+    # ВАЖНО: ВСЕГДА возвращаем HttpResponse в конце функции
     return render(request, 'ticket/profile.html', {
         'form': profile_form,
         'password_form': password_form,
-        'ticket_groups': ticket_groups
+        'ticket_groups': ticket_groups,
+        'telegram_connected': telegram_connected,
+        'telegram_username': telegram_username,
     })
 
 
@@ -535,3 +579,4 @@ def screening_partial(request, screening_id):
         'rows': rows,
         'booked_seat_ids': booked_seat_ids
     })
+
