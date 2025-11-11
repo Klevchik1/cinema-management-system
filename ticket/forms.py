@@ -196,12 +196,22 @@ class UserUpdateForm(forms.ModelForm):
 class MovieForm(forms.ModelForm):
     class Meta:
         model = Movie
-        fields = ['title', 'description', 'duration', 'genre', 'poster']
+        fields = ['title', 'short_description', 'description', 'duration', 'genre', 'poster']
         widgets = {
+            'short_description': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Короткое описание для главной страницы (до 300 символов)'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 5,
+                'placeholder': 'Полное описание для страницы фильма'
+            }),
             'duration': forms.TextInput(attrs={'placeholder': 'HH:MM:SS'}),
             'poster': forms.FileInput(attrs={'accept': 'image/*'})
         }
         labels = {
+            'short_description': 'Короткое описание',
+            'description': 'Полное описание',
             'poster': 'Постер фильма'
         }
 

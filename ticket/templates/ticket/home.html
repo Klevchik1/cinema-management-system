@@ -543,7 +543,7 @@
                                 <span><strong>Длительность:</strong> {{ movie_data.movie.duration }}</span>
                             </div>
                             <div class="movie-description">
-                                {{ movie_data.movie.description|truncatewords:30 }}
+                                {{ movie_data.movie.short_description }}
                             </div>
                             <a href="{% url 'movie_detail' movie_data.movie.id %}" class="btn-movie-details">
                                 Все сеансы

@@ -37,12 +37,23 @@ class HallAdmin(admin.ModelAdmin):
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
-    list_display = ('title', 'genre', 'duration_formatted')
-    search_fields = ('title', 'genre')
+    list_display = ('title', 'genre', 'duration_formatted', 'has_poster')
+    search_fields = ('title', 'genre', 'short_description', 'description')
+    list_filter = ('genre',)
 
     def duration_formatted(self, obj):
-        hours, minutes = divmod(obj.duration.seconds // 60, 60)
+        total_minutes = obj.duration.seconds // 60
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
         return f"{hours}ч {minutes}мин"
+
+    duration_formatted.short_description = 'Длительность'
+
+    def has_poster(self, obj):
+        return bool(obj.poster)
+
+    has_poster.boolean = True
+    has_poster.short_description = 'Есть постер'
 
 
 @admin.register(Screening)

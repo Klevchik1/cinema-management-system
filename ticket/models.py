@@ -67,7 +67,7 @@ class Hall(models.Model):
     name = models.CharField(max_length=50)
     rows = models.IntegerField()
     seats_per_row = models.IntegerField()
-    description = models.TextField(blank=True, null=True)  # Добавьте эту строку
+    description = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         logger.info(f"Сохранение зала {self.name}, новый: {self._state.adding}")
@@ -89,7 +89,16 @@ class Hall(models.Model):
 
 class Movie(models.Model):
     title = models.CharField(max_length=100)
-    description = models.CharField(max_length=500)
+    short_description = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='Короткое описание'
+    )
+    description = models.TextField(
+        max_length=1000,
+        verbose_name='Полное описание'
+    )
     duration = models.DurationField()
     genre = models.CharField(max_length=50)
     poster = models.ImageField(
@@ -98,6 +107,15 @@ class Movie(models.Model):
         null=True,
         verbose_name='Постер фильма'
     )
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        # Если короткое описание не задано, создаем его из полного
+        if not self.short_description and self.description:
+            self.short_description = self.description[:197] + '...' if len(self.description) > 200 else self.description
+        super().save(*args, **kwargs)
 
 class Screening(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
