@@ -32,7 +32,7 @@ async def tickets_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     try:
-        # Ищем пользователя в Django (асинхронно)
+        # Ищем пользователя в Django
         django_user = await get_user_by_telegram_id(user.id)
 
         if not django_user:
@@ -43,7 +43,7 @@ async def tickets_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-        # Получаем активные билеты (асинхронно)
+        # Получаем активные билеты
         tickets = await get_user_tickets(django_user)
 
         if not tickets:
@@ -65,15 +65,20 @@ async def tickets_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = "🎫 <b>Ваши активные билеты:</b>\n\n"
 
         for screening, screening_tickets_list in screening_tickets.items():
+            from django.utils import timezone
+            local_time = timezone.localtime(screening.start_time)
+            seats_info = ', '.join(f'Ряд {t.seat.row}-{t.seat.number}' for t in screening_tickets_list)
+
             message += (
                 f"<b>🎬 {screening.movie.title}</b>\n"
-                f"📅 {screening.start_time.strftime('%d.%m.%Y %H:%M')}\n"
+                f"📅 {local_time.strftime('%d.%m.%Y %H:%M')}\n"
                 f"🏠 {screening.hall.name}\n"
-                f"💺 {', '.join(f'Ряд {t.seat.row}-{t.seat.number}' for t in screening_tickets_list)}\n"
+                f"💺 {seats_info}\n"
                 f"💰 {screening.price * len(screening_tickets_list)} ₽\n\n"
             )
 
-        message += "Для скачивания билетов перейдите в личный кабинет на сайте."
+        message += "📥 <b>Скачать билеты:</b> Используйте команду /download\n\n"
+        message += "Или перейдите в личный кабинет на сайте."
 
         await update.message.reply_text(message, parse_mode='HTML')
 

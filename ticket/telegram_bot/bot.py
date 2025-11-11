@@ -6,8 +6,8 @@ from ticket.models import User
 from .handlers.start import start_handler
 from .handlers.verification import verification_handler
 from .handlers.tickets import tickets_handler
+from .handlers.download import download_handler
 import asyncio
-from asgiref.sync import sync_to_async
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +45,12 @@ class CinemaBot:
 
     def setup_handlers(self):
         """Настройка обработчиков команд"""
+        # В новой версии используем self.application вместо self.application.dispatcher
+
         # Команды
         self.application.add_handler(CommandHandler("start", start_handler))
         self.application.add_handler(CommandHandler("tickets", tickets_handler))
+        self.application.add_handler(CommandHandler("download", download_handler))
 
         # Обработка кодов подтверждения (любое текстовое сообщение)
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, verification_handler))
@@ -79,17 +82,23 @@ class CinemaBot:
             return ""
 
         screening = tickets[0].screening
+
+        # Правильно конвертируем время в локальный часовой пояс
+        from django.utils import timezone
+        local_start_time = timezone.localtime(screening.start_time)
+
         seats_info = ", ".join([f"Ряд {t.seat.row}-{t.seat.number}" for t in tickets])
         total_price = sum(t.screening.price for t in tickets)
 
         message = (
             "🎫 <b>Покупка билетов подтверждена!</b>\n\n"
             f"<b>Фильм:</b> {screening.movie.title}\n"
-            f"<b>Дата и время:</b> {screening.start_time.strftime('%d.%m.%Y %H:%M')}\n"
+            f"<b>Дата и время:</b> {local_start_time.strftime('%d.%m.%Y %H:%M')}\n"
             f"<b>Зал:</b> {screening.hall.name}\n"
             f"<b>Места:</b> {seats_info}\n"
             f"<b>Общая стоимость:</b> {total_price} ₽\n\n"
-            "Билеты доступны в вашем личном кабинете на сайте."
+            "📥 <b>Скачать билеты:</b> Используйте команду /download\n\n"
+            "Или перейдите в личный кабинет на сайте для скачивания."
         )
         return message
 
@@ -125,33 +134,3 @@ def start_bot():
         logger.error(f"Failed to start bot: {e}")
     finally:
         loop.close()
-
-
-@sync_to_async
-def get_user_tickets_for_notification(user, tickets):
-    """Асинхронно получаем данные для уведомления"""
-    # Просто возвращаем переданные данные, так как они уже загружены
-    return {
-        'user': user,
-        'tickets': list(tickets)
-    }
-
-
-async def send_ticket_notification(self, user, tickets):
-    """Отправка уведомления о покупке билетов"""
-    try:
-        if user.telegram_chat_id and self.application:
-            # Асинхронно получаем данные
-            notification_data = await get_user_tickets_for_notification(user, tickets)
-            user_obj = notification_data['user']
-            tickets_list = notification_data['tickets']
-
-            message = self.format_ticket_notification(tickets_list)
-            await self.application.bot.send_message(
-                chat_id=user_obj.telegram_chat_id,
-                text=message,
-                parse_mode='HTML'
-            )
-            logger.info(f"Ticket notification sent to user {user_obj.email}")
-    except Exception as e:
-        logger.error(f"Error sending ticket notification: {e}")

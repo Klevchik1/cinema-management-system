@@ -222,17 +222,21 @@ def book_tickets(request):
 
     # Отправляем уведомление в Telegram
     if tickets:
+        # Отправляем уведомление в Telegram
         try:
             from ticket.telegram_bot.bot import get_bot
-            bot = get_bot()
-            if bot and request.user.is_telegram_verified:
-                import asyncio
-                asyncio.run(bot.send_ticket_notification(request.user, tickets))
+            import asyncio
+
+            async def send_notification():
+                bot = get_bot()
+                if bot and request.user.is_telegram_verified:
+                    await bot.send_ticket_notification(request.user, tickets)
+
+            asyncio.run(send_notification())
         except Exception as e:
-            print(f"DEBUG: Telegram notification error: {e}")  # Для отладки
+            logger.error(f"Failed to send Telegram notification: {e}")
             # Не прерываем процесс из-за ошибки уведомления
 
-    messages.success(request, f"Билеты успешно куплены! Вы можете скачать их в личном кабинете.")
     return redirect(f'{reverse("screening_detail", args=[screening_id])}?purchase_success=true&group_id={group_id}')
 
 
