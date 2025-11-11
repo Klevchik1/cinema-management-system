@@ -292,7 +292,8 @@
     <div class="header">
         <div class="logo">КИНОТЕАТР ПРЕМЬЕРА</div>
         <div class="user-panel">
-            <a href="{% url 'home' %}" class="btn">На главную</a>
+            <a href="{% url 'home' %}" class="btn" style="background: linear-gradient(135deg, #666 0%, #444 100%);">🏠 На главную</a>
+
             {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="btn">Личный кабинет</a>
                 {% if user.is_staff %}
@@ -301,8 +302,8 @@
                 <span>Привет, {{ user.name }}!</span>
                 <a href="{% url 'logout' %}">Выйти</a>
             {% else %}
-                <a href="{% url 'login' %}">Войти</a>
-                <a href="{% url 'register' %}">Регистрация</a>
+                <a href="{% url 'login' %}" class="btn">Войти</a>
+                <a href="{% url 'register' %}" class="btn" style="background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);">Регистрация</a>
             {% endif %}
         </div>
     </div>

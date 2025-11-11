@@ -67,6 +67,52 @@
             </button>
         </form>
     </div>
+
+    {% if not user.is_authenticated %}
+    <div class="guest-notification" style="
+        background: rgba(255, 204, 0, 0.1);
+        border: 2px solid #ffcc00;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        text-align: center;
+    ">
+        <h3 style="color: #ffcc00; margin-bottom: 15px;">🔐 Требуется авторизация</h3>
+        <p style="color: #fff; margin-bottom: 20px;">
+            Для покупки билетов необходимо войти в систему
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn-buy" style="
+                background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            ">
+                Войти
+            </a>
+            <a href="{% url 'register' %}?next={{ request.path }}" class="btn-buy" style="
+                background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);
+            ">
+                Регистрация
+            </a>
+        </div>
+    </div>
+
+    <script>
+    // Для гостей скрываем кнопку покупки и делаем места неактивными
+    document.addEventListener('DOMContentLoaded', function() {
+        const bookButton = document.getElementById('book-button-{{ screening.id }}');
+        if (bookButton) {
+            bookButton.style.display = 'none';
+        }
+
+        // Делаем места неактивными для гостей
+        const seats = document.querySelectorAll('.seat:not(.booked)');
+        seats.forEach(seat => {
+            seat.style.cursor = 'not-allowed';
+            seat.style.opacity = '0.6';
+            seat.onclick = null;
+        });
+    });
+    </script>
+    {% endif %}
 </div>
 
 <script>

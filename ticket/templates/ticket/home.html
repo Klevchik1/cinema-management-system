@@ -417,8 +417,8 @@
                 <span>Привет, {{ user.name }}!</span>
                 <a href="{% url 'logout' %}">Выйти</a>
             {% else %}
-                <a href="{% url 'login' %}">Войти</a>
-                <a href="{% url 'register' %}">Регистрация</a>
+                <a href="{% url 'login' %}" class="btn">Войти</a>
+                <a href="{% url 'register' %}" class="btn" style="background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);">Регистрация</a>
             {% endif %}
         </div>
     </div>

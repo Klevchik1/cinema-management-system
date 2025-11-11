@@ -59,6 +59,12 @@
             font-weight: bold;
         }
 
+        .btn-guest:hover {
+            background: linear-gradient(135deg, #777 0%, #555 100%) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+        }
+
         .input-with-icon {
             position: relative;
         }
@@ -245,6 +251,20 @@
             <div class="admin-panel">
                 <a href="/admin/" class="admin-link">Панель администратора</a>
             </div>
+        </div>
+        <div class="guest-section" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #444;">
+            <p style="color: #aaa; margin-bottom: 15px; text-align: center;">Или продолжите как гость</p>
+            <a href="{% url 'home' %}" class="btn-guest" style="
+                display: block;
+                background: linear-gradient(135deg, #666 0%, #444 100%);
+                color: #fff;
+                text-align: center;
+                padding: 12px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: bold;
+                transition: all 0.3s;
+            ">Продолжить как гость</a>
         </div>
     </div>
 

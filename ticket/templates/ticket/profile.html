@@ -319,6 +319,23 @@
             gap: 10px;
         }
 
+        .btn-home {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            color: #fff;
+            padding: 8px 15px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-home:hover {
+            background: linear-gradient(135deg, #777 0%, #555 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+        }
+
         .section-title i {
             font-size: 24px;
         }
@@ -328,7 +345,12 @@
     <div class="header">
         <div class="logo">КИНОТЕАТР ПРЕМЬЕРА</div>
         <div class="user-panel">
+            <a href="{% url 'home' %}" class="btn" style="background: linear-gradient(135deg, #666 0%, #444 100%);">🏠 На главную</a>
+
             <a href="{% url 'home' %}" class="btn">На главную</a>
+            {% if user.is_staff %}
+                <a href="/admin/" class="btn-admin">Админ-панель</a>
+            {% endif %}
             <a href="{% url 'logout' %}">Выйти</a>
         </div>
     </div>

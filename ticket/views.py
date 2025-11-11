@@ -35,7 +35,8 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, 'Регистрация прошла успешно!')
-            return redirect('home')
+            next_url = request.GET.get('next', 'home')
+            return redirect(next_url)
         else:
             messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
@@ -55,7 +56,8 @@ def user_login(request):
             user = authenticate(request, email=email, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('home')
+                next_url = request.GET.get('next', 'home')
+                return redirect(next_url)
             else:
                 messages.error(request, 'Неверный email или пароль')
     else:
@@ -63,7 +65,6 @@ def user_login(request):
     return render(request, 'ticket/login.html', {'form': form})
 
 
-@login_required
 def home(request):
     local_now = timezone.localtime(timezone.now())
 
@@ -147,7 +148,6 @@ def user_logout(request):
     return redirect('login')
 
 
-@login_required
 def screening_detail(request, screening_id):
     screening = get_object_or_404(Screening, pk=screening_id)
     seats = Seat.objects.filter(hall=screening.hall).order_by('row', 'number')
@@ -163,7 +163,8 @@ def screening_detail(request, screening_id):
     return render(request, 'ticket/screening_detail.html', {
         'screening': screening,
         'rows': rows,
-        'booked_seat_ids': booked_seat_ids
+        'booked_seat_ids': booked_seat_ids,
+        'is_guest': not request.user.is_authenticated  # Добавляем флаг гостя
     })
 
 
