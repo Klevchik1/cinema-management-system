@@ -593,12 +593,10 @@
 
             if (isGuest) {
                 console.log('User is guest, disabling booking functionality for screening:', screeningId);
-
                 const bookButton = document.getElementById('book-button-' + screeningId);
                 if (bookButton) {
                     bookButton.style.display = 'none';
                 }
-
                 const seats = document.querySelectorAll('.seat:not(.booked)');
                 seats.forEach(seat => {
                     seat.style.cursor = 'not-allowed';

@@ -29,6 +29,8 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('download-ticket/<int:ticket_id>/', views.download_ticket_single, name='download_ticket_single'),
     path('download-ticket-group/<str:group_id>/', views.download_ticket_group, name='download_ticket_group'),
+    path('verify-email/', views.verify_email, name='verify_email'),
+    path('resend-verification-code/', views.resend_verification_code, name='resend_verification_code'),
 ]
 
 if settings.DEBUG:

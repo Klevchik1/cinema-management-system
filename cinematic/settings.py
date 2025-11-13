@@ -151,3 +151,19 @@ TELEGRAM_WEBHOOK_URL = ''  # Для продакшена
 
 # Для тестирования можно использовать polling вместо webhook
 USE_TELEGRAM_POLLING = True
+
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'vladislavmix2020@gmail.com'
+EMAIL_HOST_PASSWORD = 'bbca vlkw zsgt ouxk'
+DEFAULT_FROM_EMAIL = 'vladislavmix2020@gmail.com'
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 3600  # 1 час в секундах
+SESSION_COOKIE_SECURE = False  # True для HTTPS в продакшене
+SESSION_COOKIE_HTTPONLY = True
+SESSION_SAVE_EVERY_REQUEST = True  # Важно: сохранять сессию при каждом запросе

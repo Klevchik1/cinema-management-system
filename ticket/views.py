@@ -20,7 +20,10 @@ import uuid
 from django.urls import reverse
 from django.template.loader import render_to_string
 from .telegram_bot.bot import get_bot
-
+from .email_utils import send_verification_email, send_welcome_email
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password
+from .models import PendingRegistration
 logger = logging.getLogger(__name__)
 
 
@@ -33,16 +36,176 @@ def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'Регистрация прошла успешно!')
-            next_url = request.GET.get('next', 'home')
-            return redirect(next_url)
+            email = form.cleaned_data['email']
+            name = form.cleaned_data['name']
+            surname = form.cleaned_data['surname']
+            number = form.cleaned_data['number']
+            password = form.cleaned_data['password1']
+
+            # Удаляем старые просроченные регистрации
+            from .models import PendingRegistration
+            PendingRegistration.objects.filter(email=email).delete()
+
+            # Генерируем код подтверждения
+            import random
+            import string
+            verification_code = ''.join(random.choices(string.digits, k=6))
+
+            # Сохраняем данные во временную модель
+            pending_reg = PendingRegistration.objects.create(
+                email=email,
+                name=name,
+                surname=surname,
+                number=number,
+                password=make_password(password),
+                verification_code=verification_code
+            )
+
+            # ВАЖНО: Сохраняем данные в сессии ПЕРЕД redirect
+            request.session['pending_registration_id'] = pending_reg.id
+            request.session['pending_registration_email'] = email
+
+            # Принудительно сохраняем сессию
+            request.session.save()
+
+            logger.info(f"Session data saved: {request.session.session_key}")
+            logger.info(f"Pending registration ID: {pending_reg.id}")
+
+            # Отправляем email
+            try:
+                from .email_utils import send_verification_email
+                if send_verification_email(pending_reg):
+                    messages.success(request, f'Код подтверждения отправлен на email {email}')
+                    logger.info(f"Email sent successfully to {email}")
+                else:
+                    messages.warning(request, f'Письмо отправлено, но возникли проблемы с доставкой.')
+            except Exception as e:
+                logger.error(f"Email sending error: {e}")
+                messages.warning(request, f'Код подтверждения: {verification_code}')
+
+            # ВАЖНО: redirect после сохранения сессии
+            return redirect('verify_email')
+
         else:
             messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = RegistrationForm()
+
     return render(request, 'ticket/register.html', {'form': form})
+
+
+def verify_email(request):
+    """Страница ввода кода подтверждения"""
+    pending_reg_id = request.session.get('pending_registration_id')
+    email = request.session.get('pending_registration_email')
+
+    logger.info(f"Session data in verify_email: pending_reg_id={pending_reg_id}, email={email}")
+
+    if not pending_reg_id or not email:
+        logger.error("Missing session data in verify_email")
+        messages.error(request, 'Сессия истекла. Пожалуйста, начните регистрацию заново.')
+        return redirect('register')
+
+    try:
+        from .models import PendingRegistration
+        pending_reg = PendingRegistration.objects.get(id=pending_reg_id, email=email)
+        logger.info(f"Found pending registration: {pending_reg.id}")
+    except PendingRegistration.DoesNotExist:
+        logger.error(f"Pending registration not found: id={pending_reg_id}, email={email}")
+        messages.error(request, 'Регистрация не найдена. Пожалуйста, зарегистрируйтесь заново.')
+        # Очищаем невалидную сессию
+        if 'pending_registration_id' in request.session:
+            del request.session['pending_registration_id']
+        if 'pending_registration_email' in request.session:
+            del request.session['pending_registration_email']
+        return redirect('register')
+
+    # Проверяем не истекла ли регистрация
+    if pending_reg.is_expired():
+        logger.warning(f"Pending registration expired: {pending_reg.id}")
+        pending_reg.delete()
+        messages.error(request, 'Время для подтверждения истекло. Пожалуйста, зарегистрируйтесь заново.')
+        # Очищаем сессию
+        if 'pending_registration_id' in request.session:
+            del request.session['pending_registration_id']
+        if 'pending_registration_email' in request.session:
+            del request.session['pending_registration_email']
+        return redirect('register')
+
+    if request.method == 'POST':
+        code = request.POST.get('verification_code', '').strip()
+
+        if not code:
+            messages.error(request, 'Введите код подтверждения')
+            return render(request, 'ticket/verify_email.html', {
+                'email': pending_reg.email
+            })
+
+        if pending_reg.verification_code == code:
+            # Код верный - создаем пользователя
+            user = pending_reg.create_user()
+
+            # Отправляем приветственное письмо
+            try:
+                from .email_utils import send_welcome_email
+                send_welcome_email(user)
+            except Exception as e:
+                logger.error(f"Welcome email error: {e}")
+
+            # Логиним пользователя
+            login(request, user)
+
+            # Удаляем временную запись
+            pending_reg.delete()
+
+            # Очищаем сессию
+            session_keys = ['pending_registration_id', 'pending_registration_email']
+            for key in session_keys:
+                if key in request.session:
+                    del request.session[key]
+
+            messages.success(request, 'Email успешно подтвержден! Добро пожаловать!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Неверный код подтверждения')
+            logger.warning(f"Invalid verification code entered for {pending_reg.email}")
+
+    return render(request, 'ticket/verify_email.html', {
+        'email': pending_reg.email
+    })
+
+
+def resend_verification_code(request):
+    """Повторная отправка кода подтверждения"""
+    pending_reg_id = request.session.get('pending_registration_id')
+
+    if not pending_reg_id:
+        messages.error(request, 'Сессия истекла.')
+        return redirect('register')
+
+    try:
+        pending_reg = PendingRegistration.objects.get(id=pending_reg_id)
+
+        # Генерируем новый код
+        import random
+        import string
+        new_code = ''.join(random.choices(string.digits, k=6))
+
+        # Обновляем код
+        pending_reg.verification_code = new_code
+        pending_reg.save()
+
+        # Отправляем email
+        if send_verification_email(pending_reg):
+            messages.success(request, 'Новый код подтверждения отправлен на ваш email')
+        else:
+            messages.error(request, 'Ошибка при отправке кода. Попробуйте позже.')
+
+    except PendingRegistration.DoesNotExist:
+        messages.error(request, 'Регистрация не найдена.')
+        return redirect('register')
+
+    return redirect('verify_email')
 
 
 def user_login(request):
@@ -55,7 +218,17 @@ def user_login(request):
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
             user = authenticate(request, email=email, password=password)
+
             if user is not None:
+                # ПРОВЕРЯЕМ, ТРЕБУЕТСЯ ЛИ ПОДТВЕРЖДЕНИЕ EMAIL
+                if user.requires_email_verification() and not user.is_email_verified:
+                    # Если email не подтвержден, отправляем новый код
+                    send_verification_email(user)
+                    request.session['pending_verification_user_id'] = user.id
+                    request.session['pending_verification_email'] = user.email
+                    messages.warning(request, 'Ваш email не подтвержден. Новый код отправлен на вашу почту.')
+                    return redirect('verify_email')
+
                 login(request, user)
                 next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
@@ -63,6 +236,7 @@ def user_login(request):
                 messages.error(request, 'Неверный email или пароль')
     else:
         form = LoginForm()
+
     return render(request, 'ticket/login.html', {'form': form})
 
 

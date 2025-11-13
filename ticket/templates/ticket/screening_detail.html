@@ -192,5 +192,129 @@
         </p>
     </div>
     {% endif %}
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Получаем ID сеанса из данных на странице
+        const screeningElement = document.querySelector('input[name="screening_id"]');
+        if (screeningElement) {
+            const screeningId = screeningElement.value;
+            const priceElement = document.querySelector('.screening-price');
+            const price = priceElement ? parseFloat(priceElement.textContent.replace(/[^\d.,]/g, '').replace(',', '.')) : 0;
+            const isGuest = {% if not user.is_authenticated %}true{% else %}false{% endif %};
+
+            console.log('Initializing screening detail page:', {screeningId, price, isGuest});
+
+            if (!isGuest) {
+                // Инициализируем менеджер мест для аутентифицированных пользователей
+                initSeatManagerForScreening(screeningId, price);
+            }
+        }
+    });
+
+    // ДОБАВЬТЕ глобальные функции управления местами (если их нет)
+    function initSeatManagerForScreening(screeningId, price) {
+        if (!window.seatManagers) {
+            window.seatManagers = {};
+        }
+
+        if (!window.seatManagers[screeningId]) {
+            window.seatManagers[screeningId] = {
+                selectedSeats: [],
+                selectedSeatsInfo: document.getElementById('selected-seats-info-' + screeningId),
+                selectedSeatsInput: document.getElementById('selected-seats-input-' + screeningId),
+                bookButton: document.getElementById('book-button-' + screeningId),
+                screeningPrice: parseFloat(price) || 0
+            };
+            console.log('Initialized seat manager for screening:', screeningId, 'with price:', window.seatManagers[screeningId].screeningPrice);
+        }
+        updateSelectedSeatsInfo(screeningId);
+    }
+
+    function selectSeatPartial(seatElement, screeningId) {
+        console.log('Seat clicked:', seatElement, 'for screening:', screeningId);
+
+        if (seatElement.classList.contains('booked')) {
+            console.log('Seat is booked, ignoring click');
+            return;
+        }
+
+        const seatId = seatElement.getAttribute('data-seat-id');
+        const manager = window.seatManagers ? window.seatManagers[screeningId] : null;
+
+        if (!manager) {
+            console.error('Manager not found for screening:', screeningId);
+            return;
+        }
+
+        const seatIndex = manager.selectedSeats.indexOf(seatId);
+
+        if (seatIndex === -1) {
+            manager.selectedSeats.push(seatId);
+            seatElement.classList.add('selected');
+            seatElement.style.backgroundColor = '#2196F3';
+            seatElement.style.transform = 'scale(1.1)';
+            seatElement.style.boxShadow = '0 0 10px rgba(33, 150, 243, 0.7)';
+        } else {
+            manager.selectedSeats.splice(seatIndex, 1);
+            seatElement.classList.remove('selected');
+            seatElement.style.backgroundColor = '#4CAF50';
+            seatElement.style.transform = 'scale(1)';
+            seatElement.style.boxShadow = 'none';
+        }
+
+        updateSelectedSeatsInfo(screeningId);
+    }
+
+    function updateSelectedSeatsInfo(screeningId) {
+        const manager = window.seatManagers ? window.seatManagers[screeningId] : null;
+
+        if (!manager) {
+            console.error('Cannot update info - manager not found for screening:', screeningId);
+            return;
+        }
+
+        const count = manager.selectedSeats.length;
+        const totalPrice = count * manager.screeningPrice;
+
+        if (manager.selectedSeatsInfo) {
+            manager.selectedSeatsInfo.textContent = count === 0 ?
+                'Выбрано мест: 0' :
+                `Выбрано мест: ${count}, Общая стоимость: ${totalPrice} ₽`;
+        }
+
+        if (manager.bookButton) {
+            if (count === 0) {
+                manager.bookButton.disabled = true;
+                manager.bookButton.style.opacity = '0.6';
+                manager.bookButton.style.cursor = 'not-allowed';
+            } else {
+                manager.bookButton.disabled = false;
+                manager.bookButton.style.opacity = '1';
+                manager.bookButton.style.cursor = 'pointer';
+            }
+        }
+
+        if (manager.selectedSeatsInput) {
+            manager.selectedSeatsInput.value = JSON.stringify(manager.selectedSeats);
+        }
+    }
+
+    function validateBookingForm(screeningId) {
+        const manager = window.seatManagers ? window.seatManagers[screeningId] : null;
+
+        if (!manager) {
+            alert('Ошибка: менеджер мест не инициализирован!');
+            return false;
+        }
+
+        if (manager.selectedSeats.length === 0) {
+            alert('Пожалуйста, выберите хотя бы одно место!');
+            return false;
+        }
+
+        return true;
+    }
+    </script>
 </body>
 </html>

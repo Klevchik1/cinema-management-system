@@ -10,7 +10,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import password_validation
 
 
-class RegistrationForm(UserCreationForm):
+class RegistrationForm(forms.Form):
     email = forms.EmailField(
         label='Email',
         widget=forms.EmailInput(attrs={
@@ -55,15 +55,22 @@ class RegistrationForm(UserCreationForm):
         })
     )
 
-    class Meta:
-        model = User
-        fields = ['email', 'name', 'surname', 'number', 'password1', 'password2']
-
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
+        # Проверяем, не занят ли email подтвержденным пользователем
+        if User.objects.filter(email=email, is_email_verified=True).exists():
             raise ValidationError('Пользователь с таким email уже существует')
         return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+
+        if password1 and password2 and password1 != password2:
+            raise ValidationError('Пароли не совпадают')
+
+        return cleaned_data
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -79,21 +86,15 @@ class RegistrationForm(UserCreationForm):
 
     def clean_number(self):
         number = self.cleaned_data.get('number')
-        # Очищаем номер от лишних символов
         cleaned_number = re.sub(r'[^\d+]', '', number)
 
-        # Если номер начинается с 8, заменяем на +7
         if cleaned_number.startswith('8'):
             cleaned_number = '+7' + cleaned_number[1:]
-        elif cleaned_number.startswith('7') and not cleaned_number.startswith('+7'):
+        elif cleaned_number.startswith('7'):
             cleaned_number = '+' + cleaned_number
 
-        # Проверяем длину номера
         if len(cleaned_number) != 12:
             raise ValidationError('Номер телефона должен содержать 11 цифр')
-
-        if User.objects.filter(number=cleaned_number).exists():
-            raise ValidationError('Пользователь с таким номером телефона уже существует')
 
         return cleaned_number
 

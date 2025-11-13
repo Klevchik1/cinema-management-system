@@ -50,6 +50,11 @@ class User(AbstractUser):
     is_telegram_verified = models.BooleanField(default=False)
     telegram_verification_code = models.CharField(max_length=10, blank=True, null=True)
 
+    # Email verification fields
+    is_email_verified = models.BooleanField(default=False)
+    email_verification_code = models.CharField(max_length=6, blank=True, null=True)
+    email_verification_code_sent_at = models.DateTimeField(null=True, blank=True)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'surname', 'number']
 
@@ -64,21 +69,82 @@ class User(AbstractUser):
         import string
         code = ''.join(random.choices(string.digits, k=6))
         self.telegram_verification_code = code
-        self.is_telegram_verified = False  # Сбрасываем статус верификации
+        self.is_telegram_verified = False
         self.save()
         logger.info(f"Generated verification code {code} for user {self.email}")
         return code
 
-    def save(self, *args, **kwargs):
-        if self.number:
-            cleaned_number = re.sub(r'[^\d+]', '', self.number)
-            if cleaned_number.startswith('8'):
-                cleaned_number = '+7' + cleaned_number[1:]
-            elif cleaned_number.startswith('7'):
-                cleaned_number = '+' + cleaned_number
-            self.number = cleaned_number
-        super().save(*args, **kwargs)
+    # МЕТОДЫ ДЛЯ EMAIL
+    def generate_email_verification_code(self):
+        """Генерация кода подтверждения email"""
+        import random
+        import string
+        from django.utils import timezone
 
+        code = ''.join(random.choices(string.digits, k=6))
+        self.email_verification_code = code
+        self.email_verification_code_sent_at = timezone.now()
+        self.is_email_verified = False
+        self.save()
+        logger.info(f"Generated email verification code for user {self.email}")
+        return code
+
+    def is_verification_code_expired(self):
+        """Проверка истечения срока действия кода (10 минут)"""
+        from django.utils import timezone
+        if not self.email_verification_code_sent_at:
+            return True
+        expiration_time = self.email_verification_code_sent_at + timezone.timedelta(minutes=10)
+        return timezone.now() > expiration_time
+
+    def verify_email(self, code):
+        """Подтверждение email"""
+        if (self.email_verification_code == code and
+                not self.is_verification_code_expired()):
+            self.is_email_verified = True
+            self.email_verification_code = ''
+            self.save()
+            return True
+        return False
+
+    def requires_email_verification(self):
+        """Проверяет, требуется ли подтверждение email для этого пользователя"""
+        # Администраторам и суперпользователям не требуется подтверждение
+        return not (self.is_staff or self.is_superuser)
+
+class PendingRegistration(models.Model):
+    """Временное хранение данных регистрации до подтверждения email"""
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=50)
+    surname = models.CharField(max_length=50)
+    number = models.CharField(max_length=50)
+    password = models.CharField(max_length=128)  # Хэшированный пароль
+    verification_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        """Проверка истечения срока действия (30 минут)"""
+        from django.utils import timezone
+        expiration_time = self.created_at + timezone.timedelta(minutes=30)
+        return timezone.now() > expiration_time
+
+    def create_user(self):
+        """Создание пользователя после подтверждения"""
+        from django.contrib.auth.hashers import make_password
+
+        user = User.objects.create(
+            email=self.email,
+            name=self.name,
+            surname=self.surname,
+            number=self.number,
+            password=make_password(self.password),  # Пароль уже хэширован
+            is_email_verified=True
+        )
+        return user
+
+    class Meta:
+        verbose_name = "Ожидающая регистрация"
+        verbose_name_plural = "Ожидающие регистрации"
 
 class Hall(models.Model):
     name = models.CharField(max_length=50)
