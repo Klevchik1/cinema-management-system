@@ -274,3 +274,61 @@ class CustomPasswordChangeForm(PasswordChangeForm):
             'placeholder': 'Повторите новый пароль'
         })
     )
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'placeholder': 'Ваш email',
+            'class': 'form-control'
+        })
+    )
+
+
+class PasswordResetCodeForm(forms.Form):
+    reset_code = forms.CharField(
+        label='Код подтверждения',
+        max_length=6,
+        min_length=6,
+        widget=forms.TextInput(attrs={
+            'placeholder': '000000',
+            'class': 'form-control',
+            'style': 'text-align: center; letter-spacing: 5px;'
+        })
+    )
+
+
+class PasswordResetForm(forms.Form):
+    new_password1 = forms.CharField(
+        label='Новый пароль',
+        widget=forms.PasswordInput(attrs={
+            'placeholder': 'Введите новый пароль',
+            'class': 'form-control'
+        }),
+        help_text=password_validation.password_validators_help_text_html()
+    )
+    new_password2 = forms.CharField(
+        label='Подтверждение нового пароля',
+        widget=forms.PasswordInput(attrs={
+            'placeholder': 'Повторите новый пароль',
+            'class': 'form-control'
+        })
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('new_password1')
+        password2 = cleaned_data.get('new_password2')
+
+        if password1 and password2 and password1 != password2:
+            raise ValidationError('Пароли не совпадают')
+
+        # Валидация пароля
+        if password1:
+            try:
+                password_validation.validate_password(password1)
+            except ValidationError as error:
+                raise ValidationError(error)
+
+        return cleaned_data

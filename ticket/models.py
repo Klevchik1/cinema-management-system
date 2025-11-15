@@ -146,6 +146,29 @@ class PendingRegistration(models.Model):
         verbose_name = "Ожидающая регистрация"
         verbose_name_plural = "Ожидающие регистрации"
 
+
+class PasswordResetRequest(models.Model):
+    """Модель для хранения запросов на восстановление пароля"""
+    email = models.EmailField()
+    reset_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def is_expired(self):
+        """Проверка истечения срока действия кода (30 минут)"""
+        from django.utils import timezone
+        expiration_time = self.created_at + timezone.timedelta(minutes=30)
+        return timezone.now() > expiration_time
+
+    def mark_as_used(self):
+        """Пометить код как использованный"""
+        self.is_used = True
+        self.save()
+
+    class Meta:
+        verbose_name = "Запрос восстановления пароля"
+        verbose_name_plural = "Запросы восстановления пароля"
+
 class Hall(models.Model):
     name = models.CharField(max_length=50)
     rows = models.IntegerField()

@@ -31,6 +31,9 @@ urlpatterns = [
     path('download-ticket-group/<str:group_id>/', views.download_ticket_group, name='download_ticket_group'),
     path('verify-email/', views.verify_email, name='verify_email'),
     path('resend-verification-code/', views.resend_verification_code, name='resend_verification_code'),
+    path('password-reset/', views.password_reset_request, name='password_reset_request'),
+    path('password-reset/code/', views.password_reset_code, name='password_reset_code'),
+    path('password-reset/confirm/', views.password_reset_confirm, name='password_reset_confirm'),
 ]
 
 if settings.DEBUG:

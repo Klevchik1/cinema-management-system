@@ -24,7 +24,11 @@ from .email_utils import send_verification_email, send_welcome_email
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
 from .models import PendingRegistration
+from .models import PasswordResetRequest
+from .forms import PasswordResetRequestForm, PasswordResetCodeForm, PasswordResetForm
+from .email_utils import send_verification_email, send_welcome_email, send_password_reset_email
 logger = logging.getLogger(__name__)
+
 
 
 @staff_member_required
@@ -809,3 +813,161 @@ def screening_partial(request, screening_id):
         'booked_seat_ids': booked_seat_ids
     })
 
+
+def password_reset_request(request):
+    """Шаг 1: Запрос на восстановление пароля"""
+    from .forms import PasswordResetRequestForm
+    from .email_utils import send_password_reset_email
+
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            logger.info(f"Password reset requested for email: {email}")
+
+            # Проверяем, существует ли пользователь с таким email
+            try:
+                user = User.objects.get(email=email, is_email_verified=True)
+                logger.info(f"User found: {user.name} {user.surname}")
+
+                # Удаляем старые запросы для этого email
+                PasswordResetRequest.objects.filter(email=email).delete()
+
+                # Генерируем код восстановления
+                import random
+                import string
+                reset_code = ''.join(random.choices(string.digits, k=6))
+                logger.info(f"Generated reset code: {reset_code}")
+
+                # Создаем запрос на восстановление
+                reset_request = PasswordResetRequest.objects.create(
+                    email=email,
+                    reset_code=reset_code
+                )
+
+                # Отправляем email с кодом
+                logger.info(f"Attempting to send email to {email}")
+                if send_password_reset_email(user, reset_code):
+                    request.session['password_reset_email'] = email
+                    messages.success(request, f'Код восстановления отправлен на email {email}')
+                    logger.info(f"Email sent successfully to {email}")
+                    return redirect('password_reset_code')
+                else:
+                    messages.error(request, 'Ошибка при отправке кода. Попробуйте позже.')
+                    logger.error(f"Failed to send email to {email}")
+
+            except User.DoesNotExist:
+                logger.warning(f"User not found for email: {email}")
+                # Не показываем, что пользователь не существует (безопасность)
+                messages.success(request, 'Если email зарегистрирован, код восстановления будет отправлен')
+                return redirect('password_reset_code')
+
+    else:
+        form = PasswordResetRequestForm()
+
+    return render(request, 'ticket/password_reset_request.html', {'form': form})
+
+
+def password_reset_code(request):
+    """Шаг 2: Ввод кода подтверждения"""
+    from .forms import PasswordResetCodeForm
+
+    email = request.session.get('password_reset_email')
+    logger.info(f"Password reset code page - Email from session: {email}")
+
+    if not email:
+        messages.error(request, 'Сессия истекла. Начните восстановление пароля заново.')
+        return redirect('password_reset_request')
+
+    all_requests = PasswordResetRequest.objects.filter(email=email)
+    logger.info(f"All reset requests for {email}: {list(all_requests.values())}")
+
+    try:
+        # Ищем самый свежий НЕиспользованный запрос
+        reset_request = PasswordResetRequest.objects.filter(
+            email=email,
+            is_used=False
+        ).order_by('-created_at').first()  # Используем first() вместо latest()
+
+        if not reset_request:
+            messages.error(request, 'Запрос на восстановление не найден. Начните заново.')
+            return redirect('password_reset_request')
+
+    except PasswordResetRequest.DoesNotExist:
+        messages.error(request, 'Запрос на восстановление не найден. Начните заново.')
+        return redirect('password_reset_request')
+
+    # Проверяем не истекла ли регистрация
+    if reset_request.is_expired():
+        reset_request.delete()
+        messages.error(request, 'Время действия кода истекло. Начните заново.')
+        return redirect('password_reset_request')
+
+    if request.method == 'POST':
+        form = PasswordResetCodeForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['reset_code']
+
+            # ДОБАВИМ ОТЛАДОЧНУЮ ИНФОРМАЦИЮ
+            logger.info(f"Entered code: {code}, Expected code: {reset_request.reset_code}")
+            logger.info(f"Code match: {reset_request.reset_code == code}")
+
+            if reset_request.reset_code == code:
+                reset_request.mark_as_used()
+                request.session['password_reset_verified'] = True
+                messages.success(request, 'Код подтвержден. Установите новый пароль.')
+                return redirect('password_reset_confirm')
+            else:
+                messages.error(request, 'Неверный код подтверждения')
+                # Покажем ожидаемый код для отладки
+                logger.error(f"Code mismatch. Expected: {reset_request.reset_code}, Got: {code}")
+    else:
+        form = PasswordResetCodeForm()
+
+    return render(request, 'ticket/password_reset_code.html', {
+        'form': form,
+        'email': email
+    })
+
+
+def password_reset_confirm(request):
+    """Шаг 3: Установка нового пароля"""
+    email = request.session.get('password_reset_email')
+    verified = request.session.get('password_reset_verified')
+
+    if not email or not verified:
+        messages.error(request, 'Сессия истекла. Начните восстановление пароля заново.')
+        return redirect('password_reset_request')
+
+    try:
+        user = User.objects.get(email=email, is_email_verified=True)
+    except User.DoesNotExist:
+        messages.error(request, 'Пользователь не найден.')
+        return redirect('password_reset_request')
+
+    if request.method == 'POST':
+        form = PasswordResetForm(request.POST)
+        if form.is_valid():
+            # Устанавливаем новый пароль
+            new_password = form.cleaned_data['new_password1']
+            user.set_password(new_password)
+            user.save()
+
+            # Очищаем сессию
+            session_keys = ['password_reset_email', 'password_reset_verified']
+            for key in session_keys:
+                if key in request.session:
+                    del request.session[key]
+
+            # Удаляем использованные запросы восстановления
+            PasswordResetRequest.objects.filter(email=email).delete()
+
+            messages.success(request, 'Пароль успешно изменен! Теперь вы можете войти в систему.')
+            return redirect('login')
+    else:
+        form = PasswordResetForm()
+
+    return render(request, 'ticket/password_reset_confirm.html', {
+        'form': form,
+        'email': email
+    })
