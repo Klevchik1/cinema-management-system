@@ -69,3 +69,23 @@ def russian_date_short(value):
         return f"{day} {month}"
     except (AttributeError, KeyError):
         return str(value)
+
+
+@register.filter
+def ru_pluralize(value, variants):
+    """
+    Фильтр для правильного склонения слов после числительных
+    Использование: {{ count|ru_pluralize:"сеанс,сеанса,сеансов" }}
+    """
+    try:
+        value = int(value)
+        variants = variants.split(',')
+
+        if value % 10 == 1 and value % 100 != 11:
+            return variants[0]
+        elif 2 <= value % 10 <= 4 and (value % 100 < 10 or value % 100 >= 20):
+            return variants[1] if len(variants) > 1 else variants[0]
+        else:
+            return variants[2] if len(variants) > 2 else variants[0]
+    except (ValueError, IndexError):
+        return variants[0] if variants else ''

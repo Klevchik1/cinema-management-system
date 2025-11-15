@@ -242,21 +242,34 @@ def user_login(request):
 
 def home(request):
     local_now = timezone.localtime(timezone.now())
+    today = local_now.date()
 
     search_query = request.GET.get('search', '')
     hall_filter = request.GET.get('hall', '')
     genre_filter = request.GET.get('genre', '')
-    time_from = request.GET.get('time_from', '')
-    time_to = request.GET.get('time_to', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    selected_date = request.GET.get('date', today.isoformat())  # По умолчанию сегодня
 
-    # Получаем фильмы с предварительной загрузкой сеансов
+    # Преобразуем выбранную дату
+    try:
+        selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        selected_date = today
+
+    # Генерируем список дат для фильтра (5 дней)
+    date_filters = []
+    for i in range(5):
+        filter_date = today + timedelta(days=i)
+        date_filters.append({
+            'date': filter_date,
+            'is_today': i == 0,
+            'is_tomorrow': i == 1,
+            'label': get_date_label(filter_date, i)
+        })
+
+    # Получаем все фильмы
     movies = Movie.objects.prefetch_related('screening_set__hall').all()
 
-    # Применяем фильтры к сеансам
-    screenings_filter = Q(start_time__gt=local_now)
-
+    # Применяем текстовые фильтры
     if search_query:
         movies = movies.filter(
             Q(title__icontains=search_query) |
@@ -266,55 +279,88 @@ def home(request):
     if genre_filter:
         movies = movies.filter(genre=genre_filter)
 
-    if hall_filter:
-        screenings_filter &= Q(hall_id=hall_filter)
-
-    if time_from:
-        time_from_obj = datetime.strptime(time_from, '%H:%M').time()
-        screenings_filter &= Q(start_time__time__gte=time_from_obj)
-
-    if time_to:
-        time_to_obj = datetime.strptime(time_to, '%H:%M').time()
-        screenings_filter &= Q(start_time__time__lte=time_to_obj)
-
-    if date_from:
-        date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-        screenings_filter &= Q(start_time__date__gte=date_from_obj)
-
-    if date_to:
-        date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-        screenings_filter &= Q(start_time__date__lte=date_to_obj)
-
     # Собираем данные для каждого фильма
     movies_data = []
-    for movie in movies:
-        upcoming_screenings = movie.screening_set.filter(screenings_filter).order_by('start_time')[:3]
 
-        # Если есть фильтры по залу/времени и нет подходящих сеансов - пропускаем фильм
-        if (hall_filter or time_from or time_to or date_from or date_to) and not upcoming_screenings:
-            continue
+    for movie in movies:
+        # Получаем сеансы на выбранную дату
+        screenings_on_date = movie.screening_set.filter(
+            start_time__date=selected_date,
+            start_time__gt=local_now  # Только будущие сеансы
+        ).order_by('start_time')
+
+        # Получаем ближайшие сеансы (максимум 3)
+        upcoming_screenings = screenings_on_date[:3]
+
+        # Определяем самый ранний сеанс для сортировки
+        earliest_screening = screenings_on_date.first()
 
         movies_data.append({
             'movie': movie,
-            'upcoming_screenings': upcoming_screenings
+            'upcoming_screenings': upcoming_screenings,
+            'screening_count': screenings_on_date.count(),
+            'earliest_screening': earliest_screening,
+            'has_screenings_today': screenings_on_date.exists()
         })
+
+    # Сортируем фильмы:
+    # 1. С сеансами на выбранную дату (по времени самого раннего сеанса)
+    # 2. Без сеансов на выбранную дату
+    movies_with_screenings = [m for m in movies_data if m['has_screenings_today']]
+    movies_without_screenings = [m for m in movies_data if not m['has_screenings_today']]
+
+    # Сортируем фильмы с сеансами по времени самого раннего сеанса
+    movies_with_screenings.sort(
+        key=lambda x: x['earliest_screening'].start_time if x['earliest_screening'] else local_now)
+
+    # Объединяем списки
+    sorted_movies_data = movies_with_screenings + movies_without_screenings
 
     genres = Movie.objects.values_list('genre', flat=True).distinct()
 
     return render(request, 'ticket/home.html', {
-        'movies': movies_data,
+        'movies': sorted_movies_data,
         'halls': Hall.objects.all(),
         'genres': genres,
+        'date_filters': date_filters,
+        'selected_date': selected_date,
+        'today': today,
         'current_filters': {
             'search': search_query,
             'hall': hall_filter,
             'genre': genre_filter,
-            'time_from': time_from,
-            'time_to': time_to,
-            'date_from': date_from,
-            'date_to': date_to
+            'date': selected_date.isoformat()
         }
     })
+
+
+def get_date_label(date, index):
+    """Генерирует подпись для даты в фильтре"""
+    from django.utils import timezone
+    today = timezone.localtime(timezone.now()).date()
+
+    # Русские названия месяцев
+    months = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+
+    day = date.day
+    month = months[date.month]
+
+    if index == 0:
+        return {"label": "Сегодня", "date": f"{day} {month}"}
+    elif index == 1:
+        return {"label": "Завтра", "date": f"{day} {month}"}
+    else:
+        # Для дней послезавтра используем сокращенные названия дней недели
+        days_of_week = {
+            0: 'Пн', 1: 'Вт', 2: 'Ср', 3: 'Чт',
+            4: 'Пт', 5: 'Сб', 6: 'Вс'
+        }
+        day_of_week = days_of_week[date.weekday()]
+        return {"label": day_of_week, "date": f"{day} {month}"}
 
 
 def user_logout(request):

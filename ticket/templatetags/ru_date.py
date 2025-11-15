@@ -96,3 +96,41 @@ def russian_date_short(value):
     except Exception as e:
         logger.error(f"Ошибка форматирования короткой даты: {e}")
         return value.strftime("%d %B") if hasattr(value, 'strftime') else str(value)
+
+
+@register.filter
+def ru_date_format(value):
+    """Форматирование даты на русском"""
+    if not value:
+        return ""
+
+    # Локализуем время
+    local_time = timezone.localtime(value)
+
+    months = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+
+    return f"{local_time.day} {months[local_time.month]} {local_time.year}"
+
+@register.filter
+def ru_month(date):
+    """Возвращает месяц на русском языке"""
+    months = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+    return months[date.month]
+
+@register.filter
+def ru_short_date(date):
+    """Короткий формат даты: '15 ноября'"""
+    months = {
+        1: 'янв', 2: 'фев', 3: 'мар', 4: 'апр',
+        5: 'мая', 6: 'июн', 7: 'июл', 8: 'авг',
+        9: 'сен', 10: 'окт', 11: 'ноя', 12: 'дек'
+    }
+    return f"{date.day} {months[date.month]}"

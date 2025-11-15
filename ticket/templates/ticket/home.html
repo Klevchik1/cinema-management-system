@@ -403,6 +403,78 @@
             color: #aaa;
             font-style: italic;
         }
+        .date-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            overflow-x: auto;
+            padding: 15px 0;
+            justify-content: center;
+        }
+
+        .date-filter-item {
+            flex: 0 0 auto;
+            background: rgba(30, 30, 30, 0.9);
+            border: 2px solid #ff0000;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            min-width: 100px;
+            color: #ffcc00;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .date-filter-item:hover {
+            background: rgba(255, 0, 0, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .date-filter-item.active {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #fff;
+            border-color: #ffcc00;
+        }
+
+        .date-label {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .date-display {
+            font-size: 14px;
+            color: #ffcc00;
+            opacity: 0.9;
+        }
+
+        .date-filter-item.active .date-display {
+            color: #fff;
+        }
+
+        .no-screenings-today {
+            text-align: center;
+            padding: 15px;
+            color: #aaa;
+            font-style: italic;
+            background: rgba(50, 50, 50, 0.5);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .screening-counter {
+            background: rgba(255, 204, 0, 0.2);
+            color: #ffcc00;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -434,13 +506,27 @@
             </div>
         {% endif %}
 
+        <!-- ФИЛЬТР ПО ДАТАМ -->
+        <div class="date-filters">
+            {% for date_filter in date_filters %}
+                <div class="date-filter-item {% if date_filter.date == selected_date %}active{% endif %}"
+                     onclick="selectDate('{{ date_filter.date|date:"Y-m-d" }}')">
+                    <div class="date-label">{{ date_filter.label.label }}</div>
+                    <div class="date-display">{{ date_filter.label.date }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
         <div class="main-content">
-            <!-- Левая колонка - фильтры -->
+            <!-- Левая колонка - фильтры (БЕЗ ФИЛЬТРА ПО ДАТЕ) -->
             <div class="filters-container">
                 <div class="card">
                     <h3 style="color: #ffcc00; text-align: center; margin-bottom: 20px;">Фильтры</h3>
 
-                    <form method="get">
+                    <form method="get" id="filter-form">
+                        <!-- Скрытое поле для выбранной даты -->
+                        <input type="hidden" name="date" id="selected-date" value="{{ selected_date|date:"Y-m-d" }}">
+
                         <!-- Поиск по названию -->
                         <div class="form-group">
                             <label for="search">Поиск фильма</label>
@@ -486,29 +572,6 @@
                             </select>
                         </div>
 
-                        <!-- Фильтр по дате -->
-                        <div class="form-group">
-                            <label for="date_from">Дата с</label>
-                            <input
-                                type="date"
-                                name="date_from"
-                                id="date_from"
-                                class="form-control"
-                                value="{{ current_filters.date_from }}"
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="date_to">Дата до</label>
-                            <input
-                                type="date"
-                                name="date_to"
-                                id="date_to"
-                                class="form-control"
-                                value="{{ current_filters.date_to }}"
-                            >
-                        </div>
-
                         <!-- КНОПКИ ПРИМЕНИТЬ И СБРОСИТЬ -->
                         <div class="filter-buttons">
                             <button type="submit" class="btn-apply">Применить</button>
@@ -541,6 +604,9 @@
                             <div class="movie-meta">
                                 <span><strong>Жанр:</strong> {{ movie_data.movie.genre }}</span>
                                 <span><strong>Длительность:</strong> {{ movie_data.movie.duration }}</span>
+                                {% if movie_data.has_screenings_today %}
+                                    <span class="screening-counter">{{ movie_data.screening_count }} сеанс{{ movie_data.screening_count|ru_pluralize:" ,а,ов" }}</span>
+                                {% endif %}
                             </div>
                             <div class="movie-description">
                                 {{ movie_data.movie.short_description }}
@@ -553,20 +619,29 @@
 
                     <!-- Ближайшие сеансы -->
                     <div class="screenings-section">
-                        <div class="screenings-title">🎬 Ближайшие сеансы:</div>
-                        {% if movie_data.upcoming_screenings %}
-                            <div class="screenings-list">
-                                {% for screening in movie_data.upcoming_screenings|slice:":3" %}
-                                <div class="screening-item" onclick="location.href='{% url 'screening_detail' screening.id %}'">
-                                    <div class="screening-time">{{ screening.start_time|date:"H:i" }}</div>
-                                    <div class="screening-hall">{{ screening.hall.name }}</div>
-                                    <div class="screening-price">{{ screening.price }} ₽</div>
+                        <div class="screenings-title">
+                            🎬 {% if selected_date == today %}Ближайшие сеансы на сегодня{% else %}Сеансы на {{ selected_date|date:"d.m.Y" }}{% endif %}:
+                        </div>
+
+                        {% if movie_data.has_screenings_today %}
+                            {% if movie_data.upcoming_screenings %}
+                                <div class="screenings-list">
+                                    {% for screening in movie_data.upcoming_screenings %}
+                                    <div class="screening-item" onclick="location.href='{% url 'screening_detail' screening.id %}'">
+                                        <div class="screening-time">{{ screening.start_time|date:"H:i" }}</div>
+                                        <div class="screening-hall">{{ screening.hall.name }}</div>
+                                        <div class="screening-price">{{ screening.price }} ₽</div>
+                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
-                            </div>
+                            {% else %}
+                                <div class="no-screenings">
+                                    На выбранную дату сеансов нет
+                                </div>
+                            {% endif %}
                         {% else %}
-                            <div class="no-screenings">
-                                Нет доступных сеансов
+                            <div class="no-screenings-today">
+                                На {% if selected_date == today %}сегодня{% else %}{{ selected_date|date:"d.m.Y" }}{% endif %} сеансов больше нет
                             </div>
                         {% endif %}
                     </div>
@@ -582,18 +657,19 @@
     </div>
 
     <script>
+        function selectDate(date) {
+            document.getElementById('selected-date').value = date;
+            document.getElementById('filter-form').submit();
+        }
+
         // Устанавливаем минимальную дату как сегодня для фильтров даты
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
-            const dateFrom = document.getElementById('date_from');
-            const dateTo = document.getElementById('date_to');
 
-            if (dateFrom) {
-                dateFrom.min = today;
-            }
-            if (dateTo) {
-                dateTo.min = today;
-            }
+            // Обновляем активную дату в URL при загрузке
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentDate = urlParams.get('date') || today;
+            document.getElementById('selected-date').value = currentDate;
         });
     </script>
 </body>
