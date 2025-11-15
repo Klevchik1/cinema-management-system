@@ -574,7 +574,7 @@
 
                         <!-- КНОПКИ ПРИМЕНИТЬ И СБРОСИТЬ -->
                         <div class="filter-buttons">
-                            <button type="submit" class="btn-apply">Применить</button>
+                            <button type="button" class="btn-apply" onclick="applyFilters()">Применить</button>
                             <a href="{% url 'home' %}" class="btn-reset">Сбросить</a>
                         </div>
                     </form>
@@ -658,9 +658,89 @@
 
     <script>
         function selectDate(date) {
+            // Сохраняем текущие значения фильтров
+            const searchValue = document.getElementById('search').value;
+            const hallValue = document.getElementById('hall').value;
+            const genreValue = document.getElementById('genre').value;
+
+            // Устанавливаем выбранную дату
             document.getElementById('selected-date').value = date;
-            document.getElementById('filter-form').submit();
+
+            // Создаем скрытые поля для сохранения фильтров
+            let form = document.getElementById('filter-form');
+
+            // Удаляем старые скрытые поля если есть
+            const oldHiddenFields = form.querySelectorAll('input[type="hidden"][name="search"], input[type="hidden"][name="hall"], input[type="hidden"][name="genre"]');
+            oldHiddenFields.forEach(field => field.remove());
+
+            // Добавляем скрытые поля с текущими значениями фильтров
+            if (searchValue) {
+                let hiddenSearch = document.createElement('input');
+                hiddenSearch.type = 'hidden';
+                hiddenSearch.name = 'search';
+                hiddenSearch.value = searchValue;
+                form.appendChild(hiddenSearch);
+            }
+
+            if (hallValue) {
+                let hiddenHall = document.createElement('input');
+                hiddenHall.type = 'hidden';
+                hiddenHall.name = 'hall';
+                hiddenHall.value = hallValue;
+                form.appendChild(hiddenHall);
+            }
+
+            if (genreValue) {
+                let hiddenGenre = document.createElement('input');
+                hiddenGenre.type = 'hidden';
+                hiddenGenre.name = 'genre';
+                hiddenGenre.value = genreValue;
+                form.appendChild(hiddenGenre);
+            }
+
+            // Отправляем форму
+            form.submit();
         }
+
+        // Функция для применения фильтров с сохранением даты
+        function applyFilters() {
+            const dateValue = document.getElementById('selected-date').value;
+            let form = document.getElementById('filter-form');
+
+            // Добавляем скрытое поле с датой
+            let hiddenDate = document.createElement('input');
+            hiddenDate.type = 'hidden';
+            hiddenDate.name = 'date';
+            hiddenDate.value = dateValue;
+            form.appendChild(hiddenDate);
+
+            form.submit();
+        }
+
+        // Обработчик для кнопки "Применить"
+        document.addEventListener('DOMContentLoaded', function() {
+            const applyButton = document.querySelector('.btn-apply');
+            if (applyButton) {
+                applyButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    applyFilters();
+                });
+            }
+
+            // Обработчик для формы (на случай отправки через Enter)
+            const form = document.getElementById('filter-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Убедимся, что дата сохраняется
+                    const dateValue = document.getElementById('selected-date').value;
+                    let hiddenDate = document.createElement('input');
+                    hiddenDate.type = 'hidden';
+                    hiddenDate.name = 'date';
+                    hiddenDate.value = dateValue;
+                    this.appendChild(hiddenDate);
+                });
+            }
+        });
 
         // Устанавливаем минимальную дату как сегодня для фильтров даты
         document.addEventListener('DOMContentLoaded', function() {

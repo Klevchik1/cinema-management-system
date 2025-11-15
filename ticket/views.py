@@ -247,7 +247,7 @@ def home(request):
     search_query = request.GET.get('search', '')
     hall_filter = request.GET.get('hall', '')
     genre_filter = request.GET.get('genre', '')
-    selected_date = request.GET.get('date', today.isoformat())  # По умолчанию сегодня
+    selected_date = request.GET.get('date', today.isoformat())
 
     # Преобразуем выбранную дату
     try:
@@ -283,11 +283,18 @@ def home(request):
     movies_data = []
 
     for movie in movies:
-        # Получаем сеансы на выбранную дату
-        screenings_on_date = movie.screening_set.filter(
+        # Базовый фильтр для сеансов
+        screenings_filter = Q(
             start_time__date=selected_date,
             start_time__gt=local_now  # Только будущие сеансы
-        ).order_by('start_time')
+        )
+
+        # Применяем фильтр по залу если выбран
+        if hall_filter:
+            screenings_filter &= Q(hall_id=hall_filter)
+
+        # Получаем сеансы на выбранную дату с учетом всех фильтров
+        screenings_on_date = movie.screening_set.filter(screenings_filter).order_by('start_time')
 
         # Получаем ближайшие сеансы (максимум 3)
         upcoming_screenings = screenings_on_date[:3]
@@ -304,8 +311,6 @@ def home(request):
         })
 
     # Сортируем фильмы:
-    # 1. С сеансами на выбранную дату (по времени самого раннего сеанса)
-    # 2. Без сеансов на выбранную дату
     movies_with_screenings = [m for m in movies_data if m['has_screenings_today']]
     movies_without_screenings = [m for m in movies_data if not m['has_screenings_today']]
 
