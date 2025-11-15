@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.core.validators import RegexValidator, validate_email
 import re
-from datetime import date
+from datetime import date, timedelta
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import password_validation
 
@@ -224,19 +224,73 @@ class HallForm(forms.ModelForm):
 
 
 class ScreeningForm(forms.ModelForm):
+    start_time = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'min': '08:00'
+        }),
+        label='Время начала'
+    )
+
     class Meta:
         model = Screening
         fields = ['movie', 'hall', 'start_time', 'price']
-        widgets = {
-            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'})
+        labels = {
+            'movie': 'Фильм',
+            'hall': 'Зал',
+            'start_time': 'Время начала',
+            'price': 'Цена (руб)'
         }
+        help_texts = {
+            'start_time': 'Сеансы доступны с 8:00 до 23:00',
+            'price': 'Укажите цену в рублях'
+        }
+
+    def clean_start_time(self):
+        start_time = self.cleaned_data.get('start_time')
+        if start_time:
+            # Приводим к локальному времени для проверки
+            local_time = timezone.localtime(start_time)
+            hour = local_time.hour
+
+            # Проверяем что время между 8:00 и 23:00
+            if hour < 8 or hour >= 23:
+                raise ValidationError("Сеансы могут начинаться только с 8:00 до 23:00")
+
+            # Проверяем что сеанс не в прошлом
+            if start_time < timezone.now():
+                raise ValidationError("Нельзя создавать сеансы в прошлом")
+
+        return start_time
 
     def clean(self):
         cleaned_data = super().clean()
-
         start_time = cleaned_data.get('start_time')
-        if start_time and start_time < timezone.now():
-            raise ValidationError("Время начала сеанса не может быть в прошлом")
+        movie = cleaned_data.get('movie')
+        hall = cleaned_data.get('hall')
+
+        if start_time and movie and hall:
+            # Рассчитываем время окончания
+            end_time = start_time + movie.duration + timedelta(minutes=10)
+
+            # Проверяем что сеанс заканчивается до 24:00
+            local_end_time = timezone.localtime(end_time)
+            if local_end_time.hour >= 24:
+                raise ValidationError("Сеанс должен заканчиваться до 24:00")
+
+            # Проверяем пересечения с другими сеансами
+            overlapping_screenings = Screening.objects.filter(
+                hall=hall,
+                start_time__lt=end_time,
+                end_time__gt=start_time
+            ).exclude(pk=self.instance.pk if self.instance else None)
+
+            if overlapping_screenings.exists():
+                overlapping = overlapping_screenings.first()
+                raise ValidationError(
+                    f"Сеанс пересекается с другим сеансом: "
+                    f"{overlapping.movie.title} в {timezone.localtime(overlapping.start_time).strftime('%H:%M')}"
+                )
 
         return cleaned_data
 

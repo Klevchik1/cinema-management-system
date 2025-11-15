@@ -175,6 +175,9 @@ class Hall(models.Model):
     seats_per_row = models.IntegerField()
     description = models.TextField(blank=True, null=True)
 
+    def __str__(self):
+        return self.name
+
     def save(self, *args, **kwargs):
         logger.info(f"Сохранение зала {self.name}, новый: {self._state.adding}")
         super().save(*args, **kwargs)
@@ -192,6 +195,10 @@ class Hall(models.Model):
                     row=row,
                     number=seat_num
                 )
+
+    class Meta:
+        verbose_name = "Зал"
+        verbose_name_plural = "Залы"
 
 class Movie(models.Model):
     title = models.CharField(max_length=100)
@@ -223,12 +230,16 @@ class Movie(models.Model):
             self.short_description = self.description[:197] + '...' if len(self.description) > 200 else self.description
         super().save(*args, **kwargs)
 
+    class Meta:
+        verbose_name = "Фильм"
+        verbose_name_plural = "Фильмы"
+
 class Screening(models.Model):
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    hall = models.ForeignKey(Hall, on_delete=models.CASCADE)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    price = models.DecimalField(max_digits=6, decimal_places=2)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, verbose_name='Фильм')
+    hall = models.ForeignKey(Hall, on_delete=models.CASCADE, verbose_name='Зал')
+    start_time = models.DateTimeField(verbose_name='Время начала')
+    end_time = models.DateTimeField(verbose_name='Время окончания')
+    price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Цена')
 
     def clean(self):
         if self.start_time and self.end_time and self.start_time >= self.end_time:
@@ -252,10 +263,24 @@ class Screening(models.Model):
             self.end_time = self.start_time + self.movie.duration + timedelta(minutes=10)
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.movie.title} - {self.hall.name} ({self.start_time.strftime('%d.%m.%Y %H:%M')})"
+
+    class Meta:
+        verbose_name = "Сеанс"
+        verbose_name_plural = "Сеансы"
+
 class Seat(models.Model):
     hall = models.ForeignKey(Hall, on_delete=models.CASCADE)
     row = models.IntegerField()
     number = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.hall.name} - Ряд {self.row}, Место {self.number}"
+
+    class Meta:
+        verbose_name = "Место"
+        verbose_name_plural = "Места"
 
 class Ticket(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -276,6 +301,12 @@ class Ticket(models.Model):
         if self.group_id:
             return Ticket.objects.filter(group_id=self.group_id)
         return Ticket.objects.filter(id=self.id)
+
+    class Meta:
+        verbose_name = "Билет"
+        verbose_name_plural = "Билеты"
+        verbose_name = "Билет"
+        verbose_name_plural = "Билеты"
 
 @receiver(post_save, sender=Hall)
 def create_hall_seats(sender, instance, created, **kwargs):

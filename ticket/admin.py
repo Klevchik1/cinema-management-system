@@ -5,8 +5,9 @@ from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render
 from django.contrib import messages
+from django.utils import timezone
 import os
-from .models import BackupManager
+from .models import BackupManager, PasswordResetRequest, PendingRegistration
 
 
 @admin.register(User)
@@ -29,60 +30,85 @@ class CustomUserAdmin(UserAdmin):
 @admin.register(Hall)
 class HallAdmin(admin.ModelAdmin):
     list_display = ('name', 'rows', 'seats_per_row', 'total_seats')
+    list_filter = ('name',)
+    search_fields = ('name', 'description')
 
     def total_seats(self, obj):
         return obj.rows * obj.seats_per_row
     total_seats.short_description = 'Всего мест'
-
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
     list_display = ('title', 'genre', 'duration_formatted', 'has_poster')
     search_fields = ('title', 'genre', 'short_description', 'description')
     list_filter = ('genre',)
+    list_per_page = 20
 
     def duration_formatted(self, obj):
         total_minutes = obj.duration.seconds // 60
         hours = total_minutes // 60
         minutes = total_minutes % 60
         return f"{hours}ч {minutes}мин"
-
     duration_formatted.short_description = 'Длительность'
 
     def has_poster(self, obj):
         return bool(obj.poster)
-
     has_poster.boolean = True
     has_poster.short_description = 'Есть постер'
 
 
 @admin.register(Screening)
 class ScreeningAdmin(admin.ModelAdmin):
-    list_display = ('movie', 'hall', 'start_time', 'end_time', 'price')
+    list_display = ('movie', 'hall', 'start_time', 'end_time', 'price', 'is_active_screening')
+    list_filter = ('hall', 'start_time', 'movie')
+    search_fields = ('movie__title', 'hall__name')
     readonly_fields = ('end_time',)
+    list_per_page = 20
+    date_hierarchy = 'start_time'
 
-    def get_fields(self, request, obj=None):
-        if obj:
-            return ['movie', 'hall', 'start_time', 'end_time', 'price']
-        else:
-            return ['movie', 'hall', 'start_time', 'price']
-
-    def duration_minutes(self, obj):
-        return f"{obj.movie.duration.seconds // 60} мин"
-
-    duration_minutes.short_description = 'Длительность'
-
+    def is_active_screening(self, obj):
+        return obj.start_time > timezone.now()
+    is_active_screening.boolean = True
+    is_active_screening.short_description = 'Активный'
 
 @admin.register(Seat)
 class SeatAdmin(admin.ModelAdmin):
     list_display = ('hall', 'row', 'number')
-    list_filter = ('hall',)
+    list_filter = ('hall', 'row')
+    search_fields = ('hall__name',)
 
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = ('user', 'screening', 'seat', 'purchase_date')
-    list_filter = ('screening', 'purchase_date')
+    list_filter = ('screening', 'purchase_date', 'user')
+    search_fields = ('user__email', 'screening__movie__title')
+    readonly_fields = ('purchase_date',)
+    list_per_page = 20
+
+@admin.register(PendingRegistration)
+class PendingRegistrationAdmin(admin.ModelAdmin):
+    list_display = ('email', 'name', 'surname', 'created_at', 'is_expired')
+    list_filter = ('created_at',)
+    search_fields = ('email', 'name', 'surname')
+    readonly_fields = ('created_at',)
+
+    def is_expired(self, obj):
+        return obj.is_expired()
+    is_expired.boolean = True
+    is_expired.short_description = 'Просрочен'
+
+@admin.register(PasswordResetRequest)
+class PasswordResetRequestAdmin(admin.ModelAdmin):
+    list_display = ('email', 'created_at', 'is_expired', 'is_used')
+    list_filter = ('created_at', 'is_used')
+    search_fields = ('email',)
+    readonly_fields = ('created_at',)
+
+    def is_expired(self, obj):
+        return obj.is_expired()
+    is_expired.boolean = True
+    is_expired.short_description = 'Просрочен'
 
 
 # Функции для actions
