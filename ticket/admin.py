@@ -7,7 +7,11 @@ from django.shortcuts import render
 from django.contrib import messages
 from django.utils import timezone
 import os
-from .models import BackupManager, PasswordResetRequest, PendingRegistration
+from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report
+from django.http import HttpResponse
+from .report_utils import ReportGenerator
+from .forms import ReportFilterForm
+from django.contrib.admin.models import LogEntry
 
 
 @admin.register(User)
@@ -35,7 +39,9 @@ class HallAdmin(admin.ModelAdmin):
 
     def total_seats(self, obj):
         return obj.rows * obj.seats_per_row
+
     total_seats.short_description = 'Всего мест'
+
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
@@ -49,10 +55,12 @@ class MovieAdmin(admin.ModelAdmin):
         hours = total_minutes // 60
         minutes = total_minutes % 60
         return f"{hours}ч {minutes}мин"
+
     duration_formatted.short_description = 'Длительность'
 
     def has_poster(self, obj):
         return bool(obj.poster)
+
     has_poster.boolean = True
     has_poster.short_description = 'Есть постер'
 
@@ -68,8 +76,10 @@ class ScreeningAdmin(admin.ModelAdmin):
 
     def is_active_screening(self, obj):
         return obj.start_time > timezone.now()
+
     is_active_screening.boolean = True
     is_active_screening.short_description = 'Активный'
+
 
 @admin.register(Seat)
 class SeatAdmin(admin.ModelAdmin):
@@ -86,6 +96,7 @@ class TicketAdmin(admin.ModelAdmin):
     readonly_fields = ('purchase_date',)
     list_per_page = 20
 
+
 @admin.register(PendingRegistration)
 class PendingRegistrationAdmin(admin.ModelAdmin):
     list_display = ('email', 'name', 'surname', 'created_at', 'is_expired')
@@ -95,8 +106,10 @@ class PendingRegistrationAdmin(admin.ModelAdmin):
 
     def is_expired(self, obj):
         return obj.is_expired()
+
     is_expired.boolean = True
     is_expired.short_description = 'Просрочен'
+
 
 @admin.register(PasswordResetRequest)
 class PasswordResetRequestAdmin(admin.ModelAdmin):
@@ -107,6 +120,7 @@ class PasswordResetRequestAdmin(admin.ModelAdmin):
 
     def is_expired(self, obj):
         return obj.is_expired()
+
     is_expired.boolean = True
     is_expired.short_description = 'Просрочен'
 
@@ -174,48 +188,104 @@ class BackupManagerAdmin(admin.ModelAdmin):
                 os.remove(file_path)
         super().delete_queryset(request, queryset)
 
-    # Добавляем кастомную view для управления бэкапами
+
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    """Админ-класс для управления отчетами"""
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('backup-management/', self.admin_site.admin_view(self.backup_management_view),
-                 name='backup_management'),
+            path('', self.admin_site.admin_view(self.reports_view), name='ticket_reports'),
         ]
         return custom_urls + urls
 
-    def backup_management_view(self, request):
-        """Страница управления бэкапами"""
-        if request.method == 'POST':
-            action = request.POST.get('action')
-
-            if action == 'full_backup':
-                try:
-                    from django.core.management import call_command
-                    call_command('backup_db')
-                    messages.success(request, '✅ Полный бэкап создан успешно!')
-                except Exception as e:
-                    messages.success(request, '✅ Полный бэкап создан успешно!')
-
-            elif action == 'daily_backup':
-                backup_date = request.POST.get('backup_date')
-                if backup_date:
-                    try:
-                        from django.core.management import call_command
-                        call_command('backup_db', f'--date={backup_date}')
-                        messages.success(request, f'✅ Дневной бэкап за {backup_date} создан успешно!')
-                    except Exception as e:
-                        messages.success(request, f'✅ Дневной бэкап за {backup_date} создан успешно!')
-                else:
-                    messages.error(request, '❌ Пожалуйста, выберите дату')
-
-        # Получаем список бэкапов
-        backups = BackupManager.objects.all().order_by('-created_at')
-
+    def reports_view(self, request):
+        """Страница отчетов в админке"""
+        form = ReportFilterForm(request.GET or None)
         context = {
+            'form': form,
+            'report_data': None,
+            'report_type': None,
+            'title': 'Отчеты кинотеатра',
             **self.admin_site.each_context(request),
-            'title': 'Управление бэкапами',
-            'backups': backups,
-            'opts': self.model._meta,
         }
 
-        return render(request, 'admin/backup_management.html', context)
+        if form.is_valid():
+            report_type = form.cleaned_data['report_type']
+            period = form.cleaned_data['period']
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+
+            context['report_type'] = report_type
+            context['filters'] = {
+                'period': period,
+                'start_date': start_date,
+                'end_date': end_date
+            }
+
+            if report_type == 'revenue':
+                context['report_data'] = ReportGenerator.get_revenue_stats(period, start_date, end_date)
+            elif report_type == 'movies':
+                context['report_data'] = ReportGenerator.get_popular_movies(start_date=start_date, end_date=end_date)
+            elif report_type == 'halls':
+                context['report_data'] = ReportGenerator.get_hall_occupancy(start_date=start_date, end_date=end_date)
+            elif report_type == 'sales':
+                context['report_data'] = ReportGenerator.get_sales_statistics(start_date=start_date, end_date=end_date)
+
+        # Обработка экспорта в PDF
+        if request.method == 'POST' and 'export_pdf' in request.POST:
+            if form.is_valid():
+                report_type = form.cleaned_data['report_type']
+                period = form.cleaned_data['period']
+                start_date = form.cleaned_data['start_date']
+                end_date = form.cleaned_data['end_date']
+
+                # Получаем данные для отчета
+                if report_type == 'revenue':
+                    report_data = ReportGenerator.get_revenue_stats(period, start_date, end_date)
+                    report_title = f"Финансовая статистика ({period})"
+                elif report_type == 'movies':
+                    report_data = ReportGenerator.get_popular_movies(start_date=start_date, end_date=end_date)
+                    report_title = "Популярные фильмы"
+                elif report_type == 'halls':
+                    report_data = ReportGenerator.get_hall_occupancy(start_date=start_date, end_date=end_date)
+                    report_title = "Загруженность залов"
+                elif report_type == 'sales':
+                    report_data = ReportGenerator.get_sales_statistics(start_date=start_date, end_date=end_date)
+                    report_title = "Статистика продаж"
+                else:
+                    report_data = []
+                    report_title = "Отчет"
+
+                # Генерируем PDF
+                try:
+                    from .pdf_utils import generate_pdf_report
+                    pdf_buffer = generate_pdf_report(report_data, report_type, report_title, {
+                        'period': period,
+                        'start_date': start_date,
+                        'end_date': end_date
+                    })
+
+                    response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+                    filename = f"отчет_{report_type}_{timezone.now().strftime('%Y%m%d_%H%M')}.pdf"
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    return response
+
+                except Exception as e:
+                    messages.error(request, f'Ошибка при генерации PDF: {str(e)}')
+
+        return render(request, 'ticket/admin/reports.html', context)
+
+    def changelist_view(self, request, extra_context=None):
+        """Перенаправляем на страницу отчетов при входе в раздел"""
+        return self.reports_view(request)

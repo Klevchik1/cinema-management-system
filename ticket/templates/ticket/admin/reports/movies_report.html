@@ -1,0 +1,32 @@
+<h3 style="color: var(--header-color); margin-bottom: 20px;">🎬 Популярность фильмов</h3>
+
+{% if report_data %}
+    <div class="table-responsive">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Фильм</th>
+                    <th>Жанр</th>
+                    <th>Продано билетов</th>
+                    <th>Общая выручка</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movie in report_data %}
+                <tr>
+                    <td style="font-weight: 600; color: var(--body-fg);">{{ movie.title }}</td>
+                    <td><span class="badge">{{ movie.genre }}</span></td>
+                    <td style="text-align: center;">
+                        <span class="badge" style="background: var(--primary);">{{ movie.tickets_sold }}</span>
+                    </td>
+                    <td style="font-weight: bold; color: var(--success);">{{ movie.total_revenue|default:0|floatformat:2 }} руб.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        ℹ️ Нет данных по популярности фильмов за выбранный период.
+    </div>
+{% endif %}

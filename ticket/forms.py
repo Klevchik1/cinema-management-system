@@ -386,3 +386,49 @@ class PasswordResetForm(forms.Form):
                 raise ValidationError(error)
 
         return cleaned_data
+
+
+class ReportFilterForm(forms.Form):
+    REPORT_TYPE_CHOICES = [
+        ('revenue', '📊 Финансовая статистика'),
+        ('movies', '🎬 Популярность фильмов'),
+        ('halls', '🏛️ Загруженность залов'),
+        ('sales', '💰 Статистика продаж'),
+    ]
+
+    PERIOD_CHOICES = [
+        ('daily', 'По дням'),
+        ('weekly', 'По неделям'),
+        ('monthly', 'По месяцам'),
+    ]
+
+    report_type = forms.ChoiceField(
+        choices=REPORT_TYPE_CHOICES,
+        label='Тип отчета',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    period = forms.ChoiceField(
+        choices=PERIOD_CHOICES,
+        required=False,
+        label='Период',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    start_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control'
+        }),
+        label='Начальная дата'
+    )
+
+    end_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control'
+        }),
+        label='Конечная дата'
+    )

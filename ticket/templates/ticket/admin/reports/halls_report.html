@@ -1,0 +1,50 @@
+<h3 style="color: var(--header-color); margin-bottom: 20px;">🏛️ Загруженность залов</h3>
+
+{% if report_data %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
+        {% for hall in report_data %}
+        <div class="hall-card">
+            <h4 style="margin: 0 0 15px 0; color: var(--primary);">{{ hall.name }}</h4>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 15px;">
+                <div>
+                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Всего мест</div>
+                    <div style="font-size: 1.2em; font-weight: bold; color: var(--body-fg);">{{ hall.total_seats }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Сеансов</div>
+                    <div style="font-size: 1.2em; font-weight: bold; color: var(--body-fg);">{{ hall.total_screenings }}</div>
+                </div>
+            </div>
+
+            <hr style="margin: 10px 0; border-color: var(--border-color);">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 15px;">
+                <div>
+                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Продано билетов</div>
+                    <div style="font-size: 1.2em; font-weight: bold; color: var(--info);">{{ hall.sold_tickets }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Выручка</div>
+                    <div style="font-size: 1.2em; font-weight: bold; color: var(--success);">{{ hall.total_revenue|floatformat:2 }} руб.</div>
+                </div>
+            </div>
+
+            <div>
+                <div style="font-size: 0.8em; color: var(--body-quiet-color); margin-bottom: 5px;">Загруженность</div>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar"
+                         style="background: {% if hall.occupancy_percent > 70 %}var(--success){% elif hall.occupancy_percent > 30 %}var(--warning){% else %}var(--error){% endif %};
+                                width: {{ hall.occupancy_percent }}%;">
+                        {{ hall.occupancy_percent }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        ℹ️ Нет данных по загруженности залов за выбранный период.
+    </div>
+{% endif %}

@@ -352,3 +352,16 @@ class BackupManager(models.Model):
             size = os.path.getsize(self.get_file_path())
             return f"{size / 1024 / 1024:.2f} MB"
         return "File not found"
+
+
+# Модель-заглушка для отчетов
+class Report(models.Model):
+    """Модель для отображения отчетов в админке"""
+
+    class Meta:
+        verbose_name = "Отчет"
+        verbose_name_plural = "Отчеты"
+        app_label = 'ticket'
+
+    def __str__(self):
+        return "Система отчетности"

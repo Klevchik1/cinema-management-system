@@ -1,0 +1,268 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.report-container {
+    background: var(--body-bg);
+    color: var(--body-fg);
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+}
+
+.filter-form {
+    background: var(--darkened-bg);
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.report-table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: var(--body-bg);
+}
+
+.report-table th {
+    background: var(--primary);
+    color: var(--header-link-color);
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+.report-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+
+.report-table tr:nth-child(even) {
+    background: var(--darkened-bg);
+}
+
+.report-table tr:hover {
+    background: var(--selected-bg);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 10px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.btn-export {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.btn-export:hover {
+    background: var(--success-hover);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border: 1px solid;
+}
+
+.alert-warning {
+    background: var(--message-warning-bg);
+    border-color: var(--message-warning-border);
+    color: var(--message-warning-text);
+}
+
+.alert-info {
+    background: var(--message-info-bg);
+    border-color: var(--message-info-border);
+    color: var(--message-info-text);
+}
+
+/* Стили для прогресс-баров */
+.progress {
+    background: var(--darkened-bg);
+    border-radius: 5px;
+    height: 20px;
+    margin: 5px 0;
+    border: 1px solid var(--border-color);
+}
+
+.progress-bar {
+    border-radius: 5px;
+    height: 100%;
+    text-align: center;
+    color: white;
+    font-size: 0.8em;
+    line-height: 20px;
+    transition: width 0.3s ease;
+}
+
+/* Стили для карточек залов */
+.hall-card {
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 15px;
+    background: var(--body-bg);
+    margin-bottom: 15px;
+}
+
+.hall-card:hover {
+    border-color: var(--primary);
+    transition: border-color 0.2s ease;
+}
+
+/* Стили для бейджей */
+.badge {
+    background: var(--secondary);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .report-container {
+        padding: 10px;
+        margin: 10px 0;
+    }
+
+    .filter-form {
+        padding: 15px;
+    }
+
+    .stat-card {
+        margin: 5px;
+        padding: 15px;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+}
+
+/* Темная тема - дополнительные стили */
+@media (prefers-color-scheme: dark) {
+    .report-container {
+        background: var(--dark-bg);
+    }
+
+    .filter-form {
+        background: var(--dark-bg-secondary);
+    }
+
+    .report-table {
+        background: var(--dark-bg);
+    }
+
+    .report-table tr:nth-child(even) {
+        background: var(--dark-bg-secondary);
+    }
+
+    .hall-card {
+        background: var(--dark-bg);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <h1 style="color: var(--header-color); margin-bottom: 20px;">📊 Отчеты кинотеатра</h1>
+
+    <!-- Форма фильтров -->
+    <div class="filter-form">
+        <form method="get">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--body-fg);">
+                        <strong>Тип отчета:</strong>
+                    </label>
+                    {{ form.report_type }}
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--body-fg);">
+                        <strong>Период:</strong>
+                    </label>
+                    {{ form.period }}
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--body-fg);">
+                        <strong>Начальная дата:</strong>
+                    </label>
+                    {{ form.start_date }}
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--body-fg);">
+                        <strong>Конечная дата:</strong>
+                    </label>
+                    {{ form.end_date }}
+                </div>
+            </div>
+            <button type="submit" class="button" style="background: var(--primary); color: var(--header-link-color); padding: 10px 20px; border: none; border-radius: 3px; font-weight: 600;">
+                📈 Сгенерировать отчет
+            </button>
+        </form>
+    </div>
+
+    <!-- Отображение отчетов -->
+    {% if form.is_valid and report_data %}
+        <!-- Форма для экспорта в PDF -->
+        <form method="post" style="margin-bottom: 20px;">
+            {% csrf_token %}
+            <input type="hidden" name="report_type" value="{{ form.report_type.value }}">
+            <input type="hidden" name="period" value="{{ form.period.value }}">
+            <input type="hidden" name="start_date" value="{{ form.start_date.value|default:'' }}">
+            <input type="hidden" name="end_date" value="{{ form.end_date.value|default:'' }}">
+            <button type="submit" name="export_pdf" class="btn-export">
+                📥 Экспорт в PDF
+            </button>
+        </form>
+
+        {% if report_type == 'revenue' %}
+            {% include 'ticket/admin/reports/revenue_report.html' %}
+        {% elif report_type == 'movies' %}
+            {% include 'ticket/admin/reports/movies_report.html' %}
+        {% elif report_type == 'halls' %}
+            {% include 'ticket/admin/reports/halls_report.html' %}
+        {% elif report_type == 'sales' %}
+            {% include 'ticket/admin/reports/sales_report.html' %}
+        {% endif %}
+    {% elif form.is_valid and not report_data %}
+        <div class="alert alert-warning">
+            ⚠️ Нет данных для отображения по выбранным фильтрам.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

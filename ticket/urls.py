@@ -13,6 +13,7 @@ urlpatterns = [
     path('screening/<int:screening_id>/partial/', views.screening_partial, name='screening_partial'),
     path('book/', views.book_tickets, name='book_tickets'),
     path('download-ticket/', views.download_ticket, name='download_ticket'),
+    # Админка
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin/movies/', views.movie_manage, name='movie_manage'),
     path('admin/movies/add/', views.movie_add, name='movie_add'),
@@ -26,9 +27,11 @@ urlpatterns = [
     path('admin/screening/add/', views.screening_add, name='screening_add'),
     path('admin/screening/edit/<int:screening_id>/', views.screening_edit, name='screening_edit'),
     path('admin/screening/delete/<int:screening_id>/', views.screening_delete, name='screening_delete'),
+
     path('profile/', views.profile, name='profile'),
     path('download-ticket/<int:ticket_id>/', views.download_ticket_single, name='download_ticket_single'),
     path('download-ticket-group/<str:group_id>/', views.download_ticket_group, name='download_ticket_group'),
+    # Почта
     path('verify-email/', views.verify_email, name='verify_email'),
     path('resend-verification-code/', views.resend_verification_code, name='resend_verification_code'),
     path('password-reset/', views.password_reset_request, name='password_reset_request'),

@@ -1,0 +1,57 @@
+<h3 style="color: var(--header-color); margin-bottom: 20px;">📈 Финансовая статистика</h3>
+
+{% if report_data %}
+    <div class="table-responsive">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Период</th>
+                    <th>Выручка (руб.)</th>
+                    <th>Продано билетов</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in report_data %}
+                <tr>
+                    <td style="font-weight: 600;">
+                        {% if item.date %}
+                            {{ item.date|date:"d.m.Y" }}
+                        {% elif item.week %}
+                            Неделя {{ item.week }}, {{ item.year }}
+                        {% else %}
+                            {{ item.month }}/{{ item.year }}
+                        {% endif %}
+                    </td>
+                    <td style="font-weight: bold; color: var(--success);">{{ item.revenue|default:0|floatformat:2 }}</td>
+                    <td style="color: var(--body-fg);">{{ item.tickets_sold }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot style="background: var(--darkened-bg); font-weight: bold;">
+                <tr>
+                    <td style="padding: 12px;">Итого:</td>
+                    <td style="padding: 12px; color: var(--success);">
+                        {% with total=0 %}
+                            {% for item in report_data %}
+                                {% with item_revenue=item.revenue|default:0 %}
+                                    {{ total|add:item_revenue }}
+                                {% endwith %}
+                            {% endfor %}
+                        {% endwith %} руб.
+                    </td>
+                    <td style="padding: 12px; color: var(--info);">
+                        {% with total=0 %}
+                            {% for item in report_data %}
+                                {{ total|add:item.tickets_sold }}
+                            {% endfor %}
+                        {% endwith %}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        ℹ️ Нет данных по выручке за выбранный период.
+    </div>
+{% endif %}

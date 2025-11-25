@@ -89,3 +89,37 @@ def ru_pluralize(value, variants):
             return variants[2] if len(variants) > 2 else variants[0]
     except (ValueError, IndexError):
         return variants[0] if variants else ''
+
+# Добавляем остальные фильтры для отчетов
+@register.filter
+def sum_revenue(data):
+    """Сумма выручки из списка данных"""
+    return sum(item.get('revenue', 0) or 0 for item in data)
+
+@register.filter
+def sum_tickets(data):
+    """Сумма билетов из списка данных"""
+    return sum(item.get('tickets_sold', 0) for item in data)
+
+@register.filter
+def sum_movie_revenue(movies):
+    """Сумма выручки по всем фильмам"""
+    return sum(movie.total_revenue or 0 for movie in movies)
+
+@register.filter
+def div(value, arg):
+    """Деление значения"""
+    try:
+        return float(value) / float(arg)
+    except (ValueError, ZeroDivisionError):
+        return 0
+
+@register.filter
+def calculate_avg(revenue, tickets):
+    """Расчет среднего значения"""
+    try:
+        if tickets > 0:
+            return revenue / tickets
+        return 0
+    except (TypeError, ValueError):
+        return 0
