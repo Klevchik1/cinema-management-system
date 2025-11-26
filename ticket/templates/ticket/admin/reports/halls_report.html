@@ -31,13 +31,35 @@
             </div>
 
             <div>
-                <div style="font-size: 0.8em; color: var(--body-quiet-color); margin-bottom: 5px;">Загруженность</div>
-                <div class="progress" style="height: 25px;">
+                <div style="font-size: 0.8em; color: var(--body-quiet-color); margin-bottom: 5px;">
+                    Загруженность ({{ hall.occupancy_percent }}%)
+                </div>
+                <div class="progress" style="height: 25px; position: relative; background: var(--darkened-bg); border-radius: 5px; overflow: hidden;">
+                    <!-- ИСПРАВЛЕНО: визуальное заполнение прогресс-бара -->
                     <div class="progress-bar"
-                         style="background: {% if hall.occupancy_percent > 70 %}var(--success){% elif hall.occupancy_percent > 30 %}var(--warning){% else %}var(--error){% endif %};
-                                width: {{ hall.occupancy_percent }}%;">
-                        {{ hall.occupancy_percent }}%
+                         style="position: absolute;
+                                top: 0;
+                                left: 0;
+                                height: 100%;
+                                background: {% if hall.occupancy_percent > 70 %}var(--success){% elif hall.occupancy_percent > 30 %}var(--warning){% else %}var(--error){% endif %};
+                                width: {{ hall.occupancy_percent }}%;
+                                border-radius: 5px;
+                                transition: width 0.3s ease;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                font-weight: bold;
+                                font-size: 0.8em;
+                                min-width: {% if hall.occupancy_percent > 0 %}20px{% else %}0{% endif %};">
+                        {% if hall.occupancy_percent > 5 %}{{ hall.occupancy_percent }}%{% endif %}
                     </div>
+                    <!-- ИСПРАВЛЕНО: текст поверх прогресс-бара для малых значений -->
+                    {% if hall.occupancy_percent <= 5 %}
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--body-fg); font-weight: bold; font-size: 0.8em;">
+                            {{ hall.occupancy_percent }}%
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -1,3 +1,4 @@
+{% load report_filters %}
 <h3 style="color: var(--header-color); margin-bottom: 20px;">📈 Финансовая статистика</h3>
 
 {% if report_data %}
@@ -30,21 +31,11 @@
             <tfoot style="background: var(--darkened-bg); font-weight: bold;">
                 <tr>
                     <td style="padding: 12px;">Итого:</td>
-                    <td style="padding: 12px; color: var(--success);">
-                        {% with total=0 %}
-                            {% for item in report_data %}
-                                {% with item_revenue=item.revenue|default:0 %}
-                                    {{ total|add:item_revenue }}
-                                {% endwith %}
-                            {% endfor %}
-                        {% endwith %} руб.
+                    <td style="padding: 12px; color: var(--body-fg);">  <!-- ИЗМЕНЕНО: черный цвет -->
+                        {{ report_data|sum_revenue|floatformat:2 }} руб.
                     </td>
-                    <td style="padding: 12px; color: var(--info);">
-                        {% with total=0 %}
-                            {% for item in report_data %}
-                                {{ total|add:item.tickets_sold }}
-                            {% endfor %}
-                        {% endwith %}
+                    <td style="padding: 12px; color: var(--body-fg);">  <!-- ИЗМЕНЕНО: черный цвет -->
+                        {{ report_data|sum_tickets }}
                     </td>
                 </tr>
             </tfoot>
