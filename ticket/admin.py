@@ -7,15 +7,53 @@ from django.shortcuts import render
 from django.contrib import messages
 from django.utils import timezone
 import os
-from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report
+from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog
 from django.http import HttpResponse
 from .report_utils import ReportGenerator
 from .forms import ReportFilterForm
 from django.contrib.admin.models import LogEntry
+from .logging_utils import OperationLogger
+from .export_utils import LogExporter
+
+
+class LoggingModelAdmin(admin.ModelAdmin):
+    """Базовый класс для автоматического логирования операций в админке"""
+
+    def save_model(self, request, obj, form, change):
+        """Логирование создания/изменения объектов"""
+        action = 'UPDATE' if change else 'CREATE'
+        OperationLogger.log_model_operation(
+            request=request,
+            action_type=action,
+            instance=obj,
+            description=f"{action} {obj._meta.verbose_name} '{str(obj)}'"
+        )
+        super().save_model(request, obj, form, change)
+
+    def delete_model(self, request, obj):
+        """Логирование удаления объектов"""
+        OperationLogger.log_model_operation(
+            request=request,
+            action_type='DELETE',
+            instance=obj,
+            description=f"DELETE {obj._meta.verbose_name} '{str(obj)}'"
+        )
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        """Логирование массового удаления"""
+        for obj in queryset:
+            OperationLogger.log_model_operation(
+                request=request,
+                action_type='DELETE',
+                instance=obj,
+                description=f"DELETE {obj._meta.verbose_name} '{str(obj)}' (mass delete)"
+            )
+        super().delete_queryset(request, queryset)
 
 
 @admin.register(User)
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(LoggingModelAdmin, UserAdmin):
     list_display = ('email', 'name', 'surname', 'number', 'is_staff')
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
@@ -32,7 +70,7 @@ class CustomUserAdmin(UserAdmin):
 
 
 @admin.register(Hall)
-class HallAdmin(admin.ModelAdmin):
+class HallAdmin(LoggingModelAdmin):
     list_display = ('name', 'rows', 'seats_per_row', 'total_seats')
     list_filter = ('name',)
     search_fields = ('name', 'description')
@@ -44,7 +82,7 @@ class HallAdmin(admin.ModelAdmin):
 
 
 @admin.register(Movie)
-class MovieAdmin(admin.ModelAdmin):
+class MovieAdmin(LoggingModelAdmin):
     list_display = ('title', 'genre', 'duration_formatted', 'has_poster')
     search_fields = ('title', 'genre', 'short_description', 'description')
     list_filter = ('genre',)
@@ -66,7 +104,7 @@ class MovieAdmin(admin.ModelAdmin):
 
 
 @admin.register(Screening)
-class ScreeningAdmin(admin.ModelAdmin):
+class ScreeningAdmin(LoggingModelAdmin):
     list_display = ('movie', 'hall', 'start_time', 'end_time', 'price', 'is_active_screening')
     list_filter = ('hall', 'start_time', 'movie')
     search_fields = ('movie__title', 'hall__name')
@@ -82,14 +120,14 @@ class ScreeningAdmin(admin.ModelAdmin):
 
 
 @admin.register(Seat)
-class SeatAdmin(admin.ModelAdmin):
+class SeatAdmin(LoggingModelAdmin):
     list_display = ('hall', 'row', 'number')
     list_filter = ('hall', 'row')
     search_fields = ('hall__name',)
 
 
 @admin.register(Ticket)
-class TicketAdmin(admin.ModelAdmin):
+class TicketAdmin(LoggingModelAdmin):
     list_display = ('user', 'screening', 'seat', 'purchase_date')
     list_filter = ('screening', 'purchase_date', 'user')
     search_fields = ('user__email', 'screening__movie__title')
@@ -98,7 +136,7 @@ class TicketAdmin(admin.ModelAdmin):
 
 
 @admin.register(PendingRegistration)
-class PendingRegistrationAdmin(admin.ModelAdmin):
+class PendingRegistrationAdmin(LoggingModelAdmin):
     list_display = ('email', 'name', 'surname', 'created_at', 'is_expired')
     list_filter = ('created_at',)
     search_fields = ('email', 'name', 'surname')
@@ -112,7 +150,7 @@ class PendingRegistrationAdmin(admin.ModelAdmin):
 
 
 @admin.register(PasswordResetRequest)
-class PasswordResetRequestAdmin(admin.ModelAdmin):
+class PasswordResetRequestAdmin(LoggingModelAdmin):
     list_display = ('email', 'created_at', 'is_expired', 'is_used')
     list_filter = ('created_at', 'is_used')
     search_fields = ('email',)
@@ -130,8 +168,20 @@ def create_full_backup(modeladmin, request, queryset):
     """Action для создания полного бэкапа"""
     try:
         call_command('backup_db')
+        OperationLogger.log_backup_operation(
+            request=request,
+            backup_type='FULL',
+            description='Создан полный бэкап базы данных'
+        )
         messages.success(request, '✅ Full backup created successfully!')
     except Exception as e:
+        OperationLogger.log_operation(
+            request=request,
+            action_type='BACKUP',
+            module_type='BACKUPS',
+            description=f'Ошибка создания бэкапа: {str(e)}',
+            additional_data={'error': str(e)}
+        )
         messages.error(request, f'❌ Error creating backup: {str(e)}')
 
 
@@ -143,20 +193,32 @@ def create_daily_backup_today(modeladmin, request, queryset):
     from datetime import date
     try:
         call_command('backup_db', f'--date={date.today()}')
+        OperationLogger.log_backup_operation(
+            request=request,
+            backup_type='DAILY',
+            description=f'Создан дневной бэкап за {date.today()}'
+        )
         messages.success(request, f'✅ Daily backup for {date.today()} created successfully!')
     except Exception as e:
+        OperationLogger.log_operation(
+            request=request,
+            action_type='BACKUP',
+            module_type='BACKUPS',
+            description=f'Ошибка создания дневного бэкапа: {str(e)}',
+            additional_data={'error': str(e)}
+        )
         messages.error(request, f'❌ Error creating daily backup: {str(e)}')
 
 
 create_daily_backup_today.short_description = "📅 Create daily backup for today"
 
 
-# Админка для BackupManager с кастомной view
 @admin.register(BackupManager)
-class BackupManagerAdmin(admin.ModelAdmin):
+class BackupManagerAdmin(LoggingModelAdmin):
     list_display = ['name', 'backup_type', 'backup_date', 'created_at', 'file_status', 'file_size']
     list_filter = ['backup_type', 'created_at', 'backup_date']
     readonly_fields = ['name', 'backup_file', 'created_at', 'backup_type', 'backup_date']
+    actions = [create_full_backup, create_daily_backup_today]
 
     def file_status(self, obj):
         if obj.file_exists():
@@ -174,15 +236,32 @@ class BackupManagerAdmin(admin.ModelAdmin):
         return False
 
     def delete_model(self, request, obj):
-        """Удаляем файл при удалении записи из админки"""
+        """Логирование удаления бэкапа"""
+        OperationLogger.log_operation(
+            request=request,
+            action_type='DELETE',
+            module_type='BACKUPS',
+            description=f'Удален файл бэкапа {obj.name}',
+            object_id=obj.id,
+            object_repr=obj.name
+        )
+        # Удаляем файл при удалении записи из админки
         file_path = obj.get_file_path()
         if os.path.exists(file_path):
             os.remove(file_path)
         super().delete_model(request, obj)
 
     def delete_queryset(self, request, queryset):
-        """Удаляем файлы при массовом удалении"""
+        """Логирование массового удаления бэкапов"""
         for obj in queryset:
+            OperationLogger.log_operation(
+                request=request,
+                action_type='DELETE',
+                module_type='BACKUPS',
+                description=f'Удален файл бэкапа {obj.name} (mass delete)',
+                object_id=obj.id,
+                object_repr=obj.name
+            )
             file_path = obj.get_file_path()
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -190,7 +269,7 @@ class BackupManagerAdmin(admin.ModelAdmin):
 
 
 @admin.register(Report)
-class ReportAdmin(admin.ModelAdmin):
+class ReportAdmin(LoggingModelAdmin):
     """Админ-класс для управления отчетами"""
 
     def has_add_permission(self, request):
@@ -233,6 +312,19 @@ class ReportAdmin(admin.ModelAdmin):
                 'end_date': end_date
             }
 
+            # Логируем просмотр отчета
+            OperationLogger.log_operation(
+                request=request,
+                action_type='VIEW',
+                module_type='REPORTS',
+                description=f'Просмотр отчета: {report_type}',
+                additional_data={
+                    'period': period,
+                    'start_date': str(start_date) if start_date else None,
+                    'end_date': str(end_date) if end_date else None
+                }
+            )
+
             if report_type == 'revenue':
                 context['report_data'] = ReportGenerator.get_revenue_stats(period, start_date, end_date)
             elif report_type == 'movies':
@@ -249,6 +341,18 @@ class ReportAdmin(admin.ModelAdmin):
                 period = form.cleaned_data['period']
                 start_date = form.cleaned_data['start_date']
                 end_date = form.cleaned_data['end_date']
+
+                # Логируем экспорт отчета
+                OperationLogger.log_report_export(
+                    request=request,
+                    report_type=report_type,
+                    format_type='PDF',
+                    filters={
+                        'period': period,
+                        'start_date': str(start_date) if start_date else None,
+                        'end_date': str(end_date) if end_date else None
+                    }
+                )
 
                 # Получаем данные для отчета
                 if report_type == 'revenue':
@@ -289,3 +393,127 @@ class ReportAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Перенаправляем на страницу отчетов при входе в раздел"""
         return self.reports_view(request)
+
+
+@admin.register(OperationLog)
+class OperationLogAdmin(admin.ModelAdmin):
+    """Админ-класс для логов операций"""
+
+    list_display = [
+        'timestamp', 'user', 'action_type', 'module_type',
+        'description_short', 'object_repr_short', 'ip_address'
+    ]
+    list_filter = [
+        'action_type', 'module_type', 'timestamp', 'user'
+    ]
+    search_fields = [
+        'description', 'user__email', 'object_repr',
+        'ip_address', 'additional_data'
+    ]
+    readonly_fields = [
+        'timestamp', 'user', 'action_type', 'module_type',
+        'description', 'ip_address', 'user_agent', 'object_id',
+        'object_repr', 'additional_data_display'
+    ]
+    date_hierarchy = 'timestamp'
+    list_per_page = 50
+
+    def description_short(self, obj):
+        return obj.description[:60] + '...' if len(obj.description) > 60 else obj.description
+
+    description_short.short_description = 'Описание'
+
+    def object_repr_short(self, obj):
+        return obj.object_repr[:30] + '...' if obj.object_repr and len(obj.object_repr) > 30 else obj.object_repr
+
+    object_repr_short.short_description = 'Объект'
+
+    def additional_data_display(self, obj):
+        return obj.get_additional_data_display()
+
+    additional_data_display.short_description = 'Дополнительные данные'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('export-logs/', self.admin_site.admin_view(self.export_logs_view), name='ticket_operationlog_export'),
+        ]
+        return custom_urls + urls
+
+    def export_logs_view(self, request):
+        """Страница экспорта логов"""
+        from .forms import LogExportForm
+
+        form = LogExportForm(request.GET or None)
+        context = {
+            'form': form,
+            'title': 'Экспорт логов операций',
+            **self.admin_site.each_context(request),
+        }
+
+        if form.is_valid():
+            # Получаем отфильтрованные логи
+            queryset = self.get_export_queryset(form.cleaned_data)
+
+            format_type = form.cleaned_data['format_type']
+
+            # Логируем операцию экспорта
+            OperationLogger.log_operation(
+                request=request,
+                action_type='EXPORT',
+                module_type='SYSTEM',
+                description=f'Экспорт логов в формате {format_type.upper()}',
+                additional_data=form.cleaned_data
+            )
+
+            # Экспортируем в выбранный формат
+            if format_type == 'csv':
+                return LogExporter.export_logs_to_csv(queryset)
+            elif format_type == 'json':
+                return LogExporter.export_logs_to_json(queryset)
+            elif format_type == 'pdf':
+                return LogExporter.export_logs_to_pdf(queryset)
+
+        return render(request, 'ticket/admin/export_logs.html', context)
+
+    def get_export_queryset(self, filters):
+        """Получение queryset для экспорта на основе фильтров"""
+        queryset = OperationLog.objects.all()
+
+        # Фильтр по дате
+        if filters.get('start_date'):
+            queryset = queryset.filter(timestamp__date__gte=filters['start_date'])
+        if filters.get('end_date'):
+            queryset = queryset.filter(timestamp__date__lte=filters['end_date'])
+
+        # Фильтр по типу действия
+        if filters.get('action_type'):
+            queryset = queryset.filter(action_type=filters['action_type'])
+
+        # Фильтр по модулю
+        if filters.get('module_type'):
+            queryset = queryset.filter(module_type=filters['module_type'])
+
+        # Фильтр по пользователю
+        if filters.get('user'):
+            queryset = queryset.filter(user=filters['user'])
+
+        return queryset.order_by('-timestamp')
+
+    def changelist_view(self, request, extra_context=None):
+        """Добавляем кнопку экспорта в changelist"""
+        if extra_context is None:
+            extra_context = {}
+
+        extra_context['export_url'] = '/admin/ticket/operationlog/export-logs/'
+        return super().changelist_view(request, extra_context=extra_context)

@@ -1,0 +1,165 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.export-container {
+    background: var(--body-bg);
+    color: var(--body-fg);
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+}
+
+.filter-form {
+    background: var(--darkened-bg);
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--body-fg);
+}
+
+.btn-export {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.btn-export:hover {
+    background: var(--success-hover);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.btn-back {
+    background: var(--secondary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-back:hover {
+    background: var(--secondary-hover);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.help-text {
+    font-size: 0.8em;
+    color: var(--body-quiet-color);
+    margin-top: 5px;
+}
+
+.stats-info {
+    background: var(--message-info-bg);
+    border: 1px solid var(--message-info-border);
+    color: var(--message-info-text);
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="export-container">
+    <h1 style="color: var(--header-color); margin-bottom: 20px;">📊 Экспорт логов операций</h1>
+    
+    <div class="stats-info">
+        <strong>💡 Информация:</strong> Вы можете экспортировать логи операций в различных форматах. 
+        Используйте фильтры для выбора нужных записей.
+    </div>
+
+    <!-- Форма фильтров -->
+    <div class="filter-form">
+        <form method="get">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="id_format_type">Формат экспорта:</label>
+                    {{ form.format_type }}
+                    <div class="help-text">Выберите формат файла для экспорта</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_start_date">Начальная дата:</label>
+                    {{ form.start_date }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_end_date">Конечная дата:</label>
+                    {{ form.end_date }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_action_type">Тип действия:</label>
+                    {{ form.action_type }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_module_type">Модуль:</label>
+                    {{ form.module_type }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_user">Пользователь:</label>
+                    {{ form.user }}
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn-export">
+                    📥 Экспортировать логи
+                </button>
+                <a href="{% url 'admin:ticket_operationlog_changelist' %}" class="btn-back">
+                    ↩ Назад к списку логов
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% if form.errors %}
+        <div class="alert alert-error">
+            <strong>Ошибки в форме:</strong>
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 from .forms import ReportFilterForm
 from .report_utils import ReportGenerator
 from .pdf_utils import generate_pdf_report
+from .logging_utils import OperationLogger
 
 
 
@@ -67,6 +68,16 @@ def register(request):
                 number=number,
                 password=make_password(password),
                 verification_code=verification_code
+            )
+
+            # ЛОГИРОВАНИЕ РЕГИСТРАЦИИ
+            OperationLogger.log_operation(
+                request=request,
+                action_type='CREATE',
+                module_type='USERS',
+                description=f'Начата регистрация пользователя {email}',
+                object_id=pending_reg.id,
+                object_repr=f"{name} {surname}"
             )
 
             # ВАЖНО: Сохраняем данные в сессии ПЕРЕД redirect
@@ -153,6 +164,16 @@ def verify_email(request):
             # Код верный - создаем пользователя
             user = pending_reg.create_user()
 
+            # ЛОГИРОВАНИЕ УСПЕШНОЙ РЕГИСТРАЦИИ
+            OperationLogger.log_operation(
+                request=request,
+                action_type='CREATE',
+                module_type='USERS',
+                description=f'Успешная регистрация и верификация пользователя {user.email}',
+                object_id=user.id,
+                object_repr=str(user)
+            )
+
             # Отправляем приветственное письмо
             try:
                 from .email_utils import send_welcome_email
@@ -175,12 +196,19 @@ def verify_email(request):
             messages.success(request, 'Email успешно подтвержден! Добро пожаловать!')
             return redirect('home')
         else:
+            # ЛОГИРОВАНИЕ НЕВЕРНОГО КОДА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='OTHER',
+                module_type='AUTH',
+                description=f'Неверный код подтверждения для {pending_reg.email}'
+            )
             messages.error(request, 'Неверный код подтверждения')
             logger.warning(f"Invalid verification code entered for {pending_reg.email}")
 
-    return render(request, 'ticket/verify_email.html', {
-        'email': pending_reg.email
-    })
+        return render(request, 'ticket/verify_email.html', {
+            'email': pending_reg.email
+        })
 
 
 def resend_verification_code(request):
@@ -238,9 +266,25 @@ def user_login(request):
                     return redirect('verify_email')
 
                 login(request, user)
+
+                # ЛОГИРОВАНИЕ ВХОДА
+                OperationLogger.log_operation(
+                    request=request,
+                    action_type='LOGIN',
+                    module_type='AUTH',
+                    description=f'Успешный вход пользователя {user.email}'
+                )
+
                 next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
             else:
+                # ЛОГИРОВАНИЕ НЕУДАЧНОЙ ПОПЫТКИ ВХОДА
+                OperationLogger.log_operation(
+                    request=request,
+                    action_type='OTHER',
+                    module_type='AUTH',
+                    description=f'Неудачная попытка входа для email {email}'
+                )
                 messages.error(request, 'Неверный email или пароль')
     else:
         form = LoginForm()
@@ -377,6 +421,15 @@ def get_date_label(date, index):
 
 
 def user_logout(request):
+    # ЛОГИРОВАНИЕ ВЫХОДА
+    if request.user.is_authenticated:
+        OperationLogger.log_operation(
+            request=request,
+            action_type='LOGOUT',
+            module_type='AUTH',
+            description=f'Выход пользователя {request.user.email}'
+        )
+
     logout(request)
     messages.info(request, 'Вы успешно вышли из системы.')
     return redirect('login')
@@ -408,18 +461,13 @@ def book_tickets(request):
     screening_id = request.POST.get('screening_id')
     selected_seats = request.POST.get('selected_seats')
 
-    print(f"DEBUG: screening_id = {screening_id}")  # Для отладки
-    print(f"DEBUG: selected_seats = {selected_seats}")  # Для отладки
-
     if not selected_seats:
         messages.error(request, "Выберите хотя бы одно место.")
         return redirect('screening_detail', screening_id=screening_id)
 
     try:
         seat_ids = json.loads(selected_seats)
-        print(f"DEBUG: parsed seat_ids = {seat_ids}")  # Для отладки
     except json.JSONDecodeError as e:
-        print(f"DEBUG: JSON decode error: {e}")  # Для отладки
         messages.error(request, "Ошибка при обработке выбранных мест. Попробуйте снова.")
         return redirect('screening_detail', screening_id=screening_id)
 
@@ -428,7 +476,6 @@ def book_tickets(request):
         return redirect('screening_detail', screening_id=screening_id)
 
     screening = get_object_or_404(Screening, pk=screening_id)
-    print(f"DEBUG: screening found = {screening}")  # Для отладки
 
     # Проверяем доступность мест
     for seat_id in seat_ids:
@@ -451,11 +498,26 @@ def book_tickets(request):
             group_id=group_id
         )
         tickets.append(ticket)
-        print(f"DEBUG: created ticket for seat {seat.row}-{seat.number}")  # Для отладки
+
+    # ЛОГИРОВАНИЕ ПОКУПКИ БИЛЕТОВ
+    OperationLogger.log_operation(
+        request=request,
+        action_type='CREATE',
+        module_type='TICKETS',
+        description=f'Покупка {len(tickets)} билетов на фильм {screening.movie.title}',
+        object_id=tickets[0].id if tickets else None,
+        object_repr=f"Группа билетов {group_id}",
+        additional_data={
+            'screening_id': screening_id,
+            'movie_title': screening.movie.title,
+            'seat_count': len(tickets),
+            'total_price': sum(ticket.screening.price for ticket in tickets),
+            'group_id': group_id
+        }
+    )
 
     # Отправляем уведомление в Telegram
     if tickets:
-        # Отправляем уведомление в Telegram
         try:
             from ticket.telegram_bot.bot import get_bot
             import asyncio
@@ -468,7 +530,6 @@ def book_tickets(request):
             asyncio.run(send_notification())
         except Exception as e:
             logger.error(f"Failed to send Telegram notification: {e}")
-            # Не прерываем процесс из-за ошибки уведомления
 
     return redirect(f'{reverse("screening_detail", args=[screening_id])}?purchase_success=true&group_id={group_id}')
 
@@ -505,6 +566,22 @@ def download_ticket_single(request, ticket_id):
     else:
         tickets = [ticket]
 
+    # ЛОГИРОВАНИЕ СКАЧИВАНИЯ PDF
+    OperationLogger.log_operation(
+        request=request,
+        action_type='EXPORT',
+        module_type='TICKETS',
+        description=f'Скачивание PDF билета для фильма {ticket.screening.movie.title}',
+        object_id=ticket.id,
+        object_repr=str(ticket),
+        additional_data={
+            'format': 'PDF',
+            'movie': ticket.screening.movie.title,
+            'ticket_count': len(tickets),
+            'group_id': ticket.group_id
+        }
+    )
+
     try:
         pdf_buffer = generate_ticket_pdf(tickets)
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
@@ -529,6 +606,22 @@ def download_ticket_group(request, group_id):
     if not tickets.exists():
         messages.error(request, "Билеты не найдены.")
         return redirect('profile')
+
+    # ЛОГИРОВАНИЕ СКАЧИВАНИЯ PDF ГРУППЫ
+    OperationLogger.log_operation(
+        request=request,
+        action_type='EXPORT',
+        module_type='TICKETS',
+        description=f'Скачивание PDF группы билетов для фильма {tickets[0].screening.movie.title}',
+        object_id=tickets[0].id,
+        object_repr=f"Группа билетов {group_id}",
+        additional_data={
+            'format': 'PDF',
+            'movie': tickets[0].screening.movie.title,
+            'ticket_count': len(tickets),
+            'group_id': group_id
+        }
+    )
 
     try:
         pdf_buffer = generate_ticket_pdf(tickets)
@@ -590,6 +683,17 @@ def profile(request):
             profile_form = UserUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
                 profile_form.save()
+
+                # ЛОГИРОВАНИЕ ОБНОВЛЕНИЯ ПРОФИЛЯ
+                OperationLogger.log_operation(
+                    request=request,
+                    action_type='UPDATE',
+                    module_type='USERS',
+                    description=f'Обновление профиля пользователя {request.user.email}',
+                    object_id=request.user.id,
+                    object_repr=str(request.user)
+                )
+
                 messages.success(request, 'Ваши данные успешно обновлены!')
                 return redirect('profile')
             else:
@@ -602,6 +706,17 @@ def profile(request):
             password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
             if password_form.is_valid():
                 user = password_form.save()
+
+                # ЛОГИРОВАНИЕ СМЕНЫ ПАРОЛЯ
+                OperationLogger.log_operation(
+                    request=request,
+                    action_type='UPDATE',
+                    module_type='AUTH',
+                    description=f'Смена пароля пользователя {request.user.email}',
+                    object_id=request.user.id,
+                    object_repr=str(request.user)
+                )
+
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Пароль успешно изменен!')
                 return redirect('profile')
@@ -611,21 +726,25 @@ def profile(request):
                         password_form[field].field.widget.attrs['class'] = 'form-control error-field'
                 messages.error(request, 'Пожалуйста, исправьте ошибки в форме смены пароля.')
 
-
         elif form_type == 'telegram_connect':
-
             # Генерация кода для привязки Telegram
-
             verification_code = request.user.generate_verification_code()
 
-            messages.success(
-
-                request,
-
-                f'Код для привязки Telegram: {verification_code}. Отправьте его боту @CinemaaPremierBot'
-
+            # ЛОГИРОВАНИЕ ЗАПРОСА ПРИВЯЗКИ TELEGRAM
+            OperationLogger.log_operation(
+                request=request,
+                action_type='OTHER',
+                module_type='USERS',
+                description=f'Запрос привязки Telegram для пользователя {request.user.email}',
+                object_id=request.user.id,
+                object_repr=str(request.user),
+                additional_data={'verification_code': verification_code}
             )
 
+            messages.success(
+                request,
+                f'Код для привязки Telegram: {verification_code}. Отправьте его боту @CinemaaPremierBot'
+            )
             return redirect('profile')
 
     # Добавляем информацию о Telegram в контекст
@@ -849,6 +968,15 @@ def password_reset_request(request):
                     reset_code=reset_code
                 )
 
+                # ЛОГИРОВАНИЕ ЗАПРОСА ВОССТАНОВЛЕНИЯ ПАРОЛЯ
+                OperationLogger.log_operation(
+                    request=request,
+                    action_type='OTHER',
+                    module_type='AUTH',
+                    description=f'Запрос восстановления пароля для {email}',
+                    additional_data={'reset_code': reset_code}
+                )
+
                 # Отправляем email с кодом
                 logger.info(f"Attempting to send email to {email}")
                 if send_password_reset_email(user, reset_code):
@@ -956,6 +1084,16 @@ def password_reset_confirm(request):
             new_password = form.cleaned_data['new_password1']
             user.set_password(new_password)
             user.save()
+
+            # ЛОГИРОВАНИЕ УСПЕШНОГО ВОССТАНОВЛЕНИЯ ПАРОЛЯ
+            OperationLogger.log_operation(
+                request=request,
+                action_type='UPDATE',
+                module_type='AUTH',
+                description=f'Успешное восстановление пароля для {email}',
+                object_id=user.id,
+                object_repr=str(user)
+            )
 
             # Очищаем сессию
             session_keys = ['password_reset_email', 'password_reset_verified']

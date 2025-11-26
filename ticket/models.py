@@ -13,6 +13,8 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 from django.conf import settings
+from django.utils import timezone
+import json
 
 
 class CustomUserManager(BaseUserManager):
@@ -365,3 +367,80 @@ class Report(models.Model):
 
     def __str__(self):
         return "Система отчетности"
+
+
+class OperationLog(models.Model):
+    """Модель для логирования операций в системе"""
+
+    ACTION_TYPES = [
+        ('CREATE', 'Создание'),
+        ('UPDATE', 'Обновление'),
+        ('DELETE', 'Удаление'),
+        ('VIEW', 'Просмотр'),
+        ('EXPORT', 'Экспорт'),
+        ('LOGIN', 'Вход'),
+        ('LOGOUT', 'Выход'),
+        ('BACKUP', 'Бэкап'),
+        ('REPORT', 'Отчет'),
+        ('OTHER', 'Другое'),
+    ]
+
+    MODULE_TYPES = [
+        ('USERS', 'Пользователи'),
+        ('MOVIES', 'Фильмы'),
+        ('HALLS', 'Залы'),
+        ('SCREENINGS', 'Сеансы'),
+        ('TICKETS', 'Билеты'),
+        ('REPORTS', 'Отчеты'),
+        ('BACKUPS', 'Бэкапы'),
+        ('SYSTEM', 'Система'),
+        ('AUTH', 'Аутентификация'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Пользователь'
+    )
+    action_type = models.CharField(
+        max_length=10,
+        choices=ACTION_TYPES,
+        verbose_name='Тип действия'
+    )
+    module_type = models.CharField(
+        max_length=15,
+        choices=MODULE_TYPES,
+        verbose_name='Модуль'
+    )
+    description = models.TextField(verbose_name='Описание')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP адрес')
+    user_agent = models.TextField(null=True, blank=True, verbose_name='User Agent')
+    object_id = models.IntegerField(null=True, blank=True, verbose_name='ID объекта')
+    object_repr = models.CharField(max_length=255, null=True, blank=True, verbose_name='Объект')
+    additional_data = models.JSONField(null=True, blank=True, verbose_name='Дополнительные данные')
+    timestamp = models.DateTimeField(default=timezone.now, verbose_name='Время операции')
+
+    class Meta:
+        verbose_name = 'Лог операции'
+        verbose_name_plural = 'Логи операций'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['-timestamp']),
+            models.Index(fields=['user']),
+            models.Index(fields=['action_type']),
+            models.Index(fields=['module_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_action_type_display()} - {self.get_module_type_display()} - {self.timestamp.strftime('%d.%m.%Y %H:%M')}"
+
+    def get_additional_data_display(self):
+        """Форматированный вывод дополнительных данных"""
+        if self.additional_data:
+            try:
+                return json.dumps(self.additional_data, ensure_ascii=False, indent=2)
+            except:
+                return str(self.additional_data)
+        return "-"

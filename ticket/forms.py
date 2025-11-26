@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Movie, Hall, Screening
+from .models import User, Movie, Hall, Screening, OperationLog
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.core.validators import RegexValidator, validate_email
@@ -8,6 +8,7 @@ import re
 from datetime import date, timedelta
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import password_validation
+from .export_utils import LogExporter
 
 
 class RegistrationForm(forms.Form):
@@ -432,3 +433,55 @@ class ReportFilterForm(forms.Form):
         }),
         label='Конечная дата'
     )
+
+
+# Добавить после существующих форм
+class LogExportForm(forms.Form):
+    """Форма для экспорта логов"""
+
+    format_type = forms.ChoiceField(
+        choices=LogExporter.get_export_formats(),
+        label='Формат экспорта',
+        initial='csv'
+    )
+
+    start_date = forms.DateField(
+        label='Начальная дата',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+
+    end_date = forms.DateField(
+        label='Конечная дата',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+
+    action_type = forms.ChoiceField(
+        choices=[('', 'Все действия')] + list(OperationLog.ACTION_TYPES),
+        label='Тип действия',
+        required=False
+    )
+
+    module_type = forms.ChoiceField(
+        choices=[('', 'Все модули')] + list(OperationLog.MODULE_TYPES),
+        label='Модуль',
+        required=False
+    )
+
+    user = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        label='Пользователь',
+        required=False,
+        empty_label='Все пользователи'
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+
+        if start_date and end_date and start_date > end_date:
+            raise forms.ValidationError('Начальная дата не может быть больше конечной')
+
+        return cleaned_data
