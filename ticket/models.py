@@ -202,6 +202,17 @@ class Hall(models.Model):
         verbose_name = "Зал"
         verbose_name_plural = "Залы"
 
+class Genre(models.Model):
+    name = models.CharField(max_length=50, unique=True, verbose_name='Название жанра')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Жанр"
+        verbose_name_plural = "Жанры"
+
 class Movie(models.Model):
     title = models.CharField(max_length=100)
     short_description = models.CharField(
@@ -215,7 +226,11 @@ class Movie(models.Model):
         verbose_name='Полное описание'
     )
     duration = models.DurationField()
-    genre = models.CharField(max_length=50)
+    genre = models.ForeignKey(  # Меняем на ForeignKey
+        Genre,
+        on_delete=models.PROTECT,
+        verbose_name='Жанр'
+    )
     poster = models.ImageField(
         upload_to='movie_posters/',
         blank=True,

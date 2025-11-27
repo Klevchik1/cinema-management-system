@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Movie, Hall, Screening, OperationLog
+from .models import User, Movie, Hall, Screening, OperationLog, Genre
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.core.validators import RegexValidator, validate_email
@@ -196,9 +196,26 @@ class UserUpdateForm(forms.ModelForm):
 
 
 class MovieForm(forms.ModelForm):
+    genre_choice = forms.ChoiceField(
+        choices=[],  # Будет заполнено динамически
+        required=False,
+        label='Выберите жанр',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    new_genre = forms.CharField(
+        max_length=50,
+        required=False,
+        label='Или создайте новый жанр',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Введите название нового жанра'
+        })
+    )
+
     class Meta:
         model = Movie
-        fields = ['title', 'short_description', 'description', 'duration', 'genre', 'poster']
+        fields = ['title', 'short_description', 'description', 'duration', 'poster']
         widgets = {
             'short_description': forms.Textarea(attrs={
                 'rows': 3,
@@ -211,11 +228,48 @@ class MovieForm(forms.ModelForm):
             'duration': forms.TextInput(attrs={'placeholder': 'HH:MM:SS'}),
             'poster': forms.FileInput(attrs={'accept': 'image/*'})
         }
-        labels = {
-            'short_description': 'Короткое описание',
-            'description': 'Полное описание',
-            'poster': 'Постер фильма'
-        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Заполняем выбор существующих жанров
+        genres = Genre.objects.all().values_list('name', 'name')
+        self.fields['genre_choice'].choices = [('', '---------')] + list(genres) + [('new', '➕ Создать новый жанр...')]
+
+        # Если редактируем существующий фильм, устанавливаем текущий жанр
+        if self.instance and self.instance.pk and self.instance.genre:
+            self.fields['genre_choice'].initial = self.instance.genre.name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        genre_choice = cleaned_data.get('genre_choice')
+        new_genre = cleaned_data.get('new_genre')
+
+        if not genre_choice and not new_genre:
+            raise ValidationError('Выберите жанр или создайте новый')
+
+        if genre_choice == 'new':
+            if not new_genre:
+                raise ValidationError('Введите название нового жанра')
+            # Создаем новый жанр
+            genre, created = Genre.objects.get_or_create(name=new_genre)
+            cleaned_data['genre'] = genre
+        elif genre_choice:
+            # Используем существующий жанр
+            try:
+                genre = Genre.objects.get(name=genre_choice)
+                cleaned_data['genre'] = genre
+            except Genre.DoesNotExist:
+                raise ValidationError('Выбранный жанр не существует')
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        movie = super().save(commit=False)
+        movie.genre = self.cleaned_data['genre']
+        if commit:
+            movie.save()
+        return movie
 
 
 class HallForm(forms.ModelForm):

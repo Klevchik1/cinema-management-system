@@ -7,8 +7,9 @@ import os
 from django.core.files import File
 from django.conf import settings
 from django.db.models import Q
+from rest_framework.exceptions import ValidationError
 
-from ticket.models import Hall, Movie, Screening, Seat, User
+from ticket.models import Hall, Movie, Screening, Seat, User, Genre
 
 fake = Faker('ru_RU')
 
@@ -19,18 +20,20 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.clear_old_data()
         self.create_admin()
+        genres = self.create_genres()  # создаем жанры первыми
         halls = self.create_halls()
-        movies = self.create_movies()
+        movies = self.create_movies(genres)  # передаем словарь жанров
         self.create_screenings(halls, movies)
 
-        self.stdout.write(self.style.SUCCESS('✅ База успешно заполнена расширенными тестовыми данными!'))
+        self.stdout.write(self.style.SUCCESS('✅ База успешно заполнена тестовыми данными!'))
 
     def clear_old_data(self):
-        """Очистка старых данных (кроме суперпользователей)"""
-        Hall.objects.all().delete()
-        Movie.objects.all().delete()
+        """Очистка старых данных (кроме суперпользователей и жанров)"""
         Screening.objects.all().delete()
         Seat.objects.all().delete()
+        Movie.objects.all().delete()
+        Hall.objects.all().delete()
+        Genre.objects.all().delete()  # НЕ удаляем жанры, они постоянные
 
     def create_admin(self):
         """Создание администратора если его нет"""
@@ -94,7 +97,23 @@ class Command(BaseCommand):
 
         return halls
 
-    def create_movies(self):
+    def create_genres(self):
+        """Создание основных жанров"""
+        genres = [
+            'фантастика', 'комедия', 'боевик', 'драма', 'приключения',
+            'биография', 'мультфильм', 'ужасы', 'триллер', 'мелодрама'
+        ]
+
+        created_genres = {}
+        for genre_name in genres:
+            genre, created = Genre.objects.get_or_create(name=genre_name)
+            created_genres[genre_name] = genre
+            if created:
+                self.stdout.write(self.style.SUCCESS(f'Создан жанр: {genre_name}'))
+
+        return created_genres
+
+    def create_movies(self, genres):
         """Создание 12 фильмов с реальными описаниями"""
         posters_dir = os.path.join(settings.BASE_DIR, 'ticket', 'management', 'commands', 'posters')
 
@@ -199,12 +218,21 @@ class Command(BaseCommand):
 
         movies = []
         for data in movies_data:
+            # Получаем объект Genre из словаря
+            if genres and data['genre'] in genres:
+                genre_obj = genres[data['genre']]
+            else:
+                # Если жанра нет в словаре, создаем его
+                genre_obj, created = Genre.objects.get_or_create(name=data['genre'])
+                if created:
+                    self.stdout.write(self.style.SUCCESS(f'Создан жанр: {data["genre"]}'))
+
             movie = Movie.objects.create(
                 title=data['title'],
                 short_description=data['short_description'],
                 description=data['description'],
                 duration=timedelta(minutes=data['duration']),
-                genre=data['genre']
+                genre=genre_obj  # передаем объект Genre
             )
 
             poster_path = os.path.join(posters_dir, data['poster'])
@@ -265,8 +293,8 @@ class Command(BaseCommand):
     def create_screenings(self, halls, movies):
         """Создание сеансов на месяц вперед - минимум 10 сеансов на фильм"""
         now = timezone.localtime(timezone.now())
-        # Сеансы с 8 утра до 22:00 (последний сеанс должен закончиться до 00:00)
-        screening_times = ['08:00', '10:30', '13:00', '15:30', '18:00', '20:30', '22:00']
+        # Сеансы с 8 утра до 21:30 (последний сеанс должен закончиться до 24:00)
+        screening_times = ['08:00', '10:30', '13:00', '15:30', '18:00', '20:30', '21:30']  # убрал 22:00
         created_count = 0
         screenings_per_movie = {movie.id: 0 for movie in movies}
 
@@ -295,9 +323,15 @@ class Command(BaseCommand):
                     )
                     screening_time = timezone.make_aware(screening_time)
 
-                    # Проверяем, что сеанс не в прошлом и слот свободен
+                    # Проверяем, что сеанс не в прошлом
                     if screening_time < now:
                         continue
+
+                    # Проверяем что сеанс заканчивается до 24:00
+                    end_time = screening_time + movie.duration + timedelta(minutes=10)
+                    local_end_time = timezone.localtime(end_time)
+                    if local_end_time.hour >= 24 or (local_end_time.hour == 0 and local_end_time.minute > 0):
+                        continue  # Пропускаем этот временной слот
 
                     if not self.is_time_slot_available(hall, screening_time, movie.duration):
                         continue
@@ -308,20 +342,23 @@ class Command(BaseCommand):
                     final_price = int(base_price * time_multiplier)
 
                     # Создаем сеанс
-                    Screening.objects.create(
-                        movie=movie,
-                        hall=hall,
-                        start_time=screening_time,
-                        price=final_price
-                    )
+                    try:
+                        Screening.objects.create(
+                            movie=movie,
+                            hall=hall,
+                            start_time=screening_time,
+                            price=final_price
+                        )
+                        created_count += 1
+                        screenings_per_movie[movie.id] += 1
+                    except ValidationError as e:
+                        self.stdout.write(self.style.WARNING(f'Пропущен сеанс: {e}'))
+                        continue
 
-                    created_count += 1
-                    screenings_per_movie[movie.id] += 1
-
-        # Выводим статистику
-        self.stdout.write(self.style.SUCCESS(f'Всего создано {created_count} сеансов'))
-        for movie in movies:
-            self.stdout.write(self.style.SUCCESS(f'  {movie.title}: {screenings_per_movie[movie.id]} сеансов'))
+            # Выводим статистику
+            self.stdout.write(self.style.SUCCESS(f'Всего создано {created_count} сеансов'))
+            for movie in movies:
+                self.stdout.write(self.style.SUCCESS(f'  {movie.title}: {screenings_per_movie[movie.id]} сеансов'))
 
     def add_arguments(self, parser):
         parser.add_argument(

@@ -1,5 +1,5 @@
 from django.contrib.auth.admin import UserAdmin
-from .models import Hall, Movie, Screening, Seat, Ticket, User
+from .models import Hall, Movie, Screening, Seat, Ticket, User, Genre
 from django.core.management import call_command
 from django.contrib import admin
 from django.urls import path
@@ -10,7 +10,7 @@ import os
 from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog
 from django.http import HttpResponse
 from .report_utils import ReportGenerator
-from .forms import ReportFilterForm
+from .forms import ReportFilterForm, MovieForm
 from django.contrib.admin.models import LogEntry
 from .logging_utils import OperationLogger
 from .export_utils import LogExporter
@@ -81,12 +81,29 @@ class HallAdmin(LoggingModelAdmin):
     total_seats.short_description = 'Всего мест'
 
 
+@admin.register(Genre)
+class GenreAdmin(LoggingModelAdmin):
+    """Админ-класс для управления жанрами"""
+    list_display = ('name', 'movie_count', 'created_at')
+    search_fields = ('name',)
+    list_per_page = 20
+    readonly_fields = ('created_at',)
+
+    def movie_count(self, obj):
+        """Количество фильмов в этом жанре"""
+        return obj.movie_set.count()
+
+    movie_count.short_description = 'Количество фильмов'
+
+
 @admin.register(Movie)
 class MovieAdmin(LoggingModelAdmin):
-    list_display = ('title', 'genre', 'duration_formatted', 'has_poster')
-    search_fields = ('title', 'genre', 'short_description', 'description')
+    list_display = ('title', 'genre', 'duration_formatted', 'has_poster', 'screening_count')
+    search_fields = ('title', 'genre__name', 'short_description', 'description')
     list_filter = ('genre',)
     list_per_page = 20
+    form = MovieForm  # Используем кастомную форму
+    readonly_fields = ('created_at',) if hasattr(Movie, 'created_at') else ()
 
     def duration_formatted(self, obj):
         total_minutes = obj.duration.seconds // 60
@@ -101,6 +118,12 @@ class MovieAdmin(LoggingModelAdmin):
 
     has_poster.boolean = True
     has_poster.short_description = 'Есть постер'
+
+    def screening_count(self, obj):
+        """Количество сеансов для этого фильма"""
+        return obj.screening_set.count()
+
+    screening_count.short_description = 'Сеансы'
 
 
 @admin.register(Screening)

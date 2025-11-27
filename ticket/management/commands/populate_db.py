@@ -7,7 +7,7 @@ import os
 from django.core.files import File
 from django.conf import settings
 
-from ticket.models import Hall, Movie, Screening, Seat, User
+from ticket.models import Hall, Movie, Screening, Seat, User, Genre
 
 fake = Faker('ru_RU')
 
@@ -18,18 +18,20 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.clear_old_data()
         self.create_admin()
+        genres = self.create_genres()  # создаем жанры первыми
         halls = self.create_halls()
-        movies = self.create_movies()
+        movies = self.create_movies(genres)  # передаем словарь жанров
         self.create_screenings(halls, movies)
 
         self.stdout.write(self.style.SUCCESS('✅ База успешно заполнена тестовыми данными!'))
 
     def clear_old_data(self):
-        """Очистка старых данных (кроме суперпользователей)"""
-        Hall.objects.all().delete()
-        Movie.objects.all().delete()
+        """Очистка старых данных (кроме суперпользователей и жанров)"""
         Screening.objects.all().delete()
         Seat.objects.all().delete()
+        Movie.objects.all().delete()
+        Hall.objects.all().delete()
+        Genre.objects.all().delete()  # НЕ удаляем жанры, они постоянные
 
     def create_admin(self):
         """Создание администратора если его нет"""
@@ -81,7 +83,23 @@ class Command(BaseCommand):
 
         return halls
 
-    def create_movies(self):
+    def create_genres(self):
+        """Создание основных жанров"""
+        genres = [
+            'фантастика', 'комедия', 'боевик', 'драма', 'приключения',
+            'биография', 'мультфильм', 'ужасы', 'триллер', 'мелодрама'
+        ]
+
+        created_genres = {}
+        for genre_name in genres:
+            genre, created = Genre.objects.get_or_create(name=genre_name)
+            created_genres[genre_name] = genre
+            if created:
+                self.stdout.write(self.style.SUCCESS(f'Создан жанр: {genre_name}'))
+
+        return created_genres
+
+    def create_movies(self, genres):
         """Создание фильмов с полными и короткими описаниями"""
         posters_dir = os.path.join(settings.BASE_DIR, 'ticket', 'management', 'commands', 'posters')
 
@@ -130,15 +148,23 @@ class Command(BaseCommand):
 
         movies = []
         for data in movies_data:
+            # Получаем объект Genre из словаря
+            if genres and data['genre'] in genres:
+                genre_obj = genres[data['genre']]
+            else:
+                # Если жанра нет в словаре, создаем его
+                genre_obj, created = Genre.objects.get_or_create(name=data['genre'])
+                if created:
+                    self.stdout.write(self.style.SUCCESS(f'Создан жанр: {data["genre"]}'))
+
             movie = Movie.objects.create(
                 title=data['title'],
                 short_description=data['short_description'],
                 description=data['description'],
                 duration=timedelta(minutes=data['duration']),
-                genre=data['genre']
+                genre=genre_obj  # передаем объект Genre
             )
 
-            # Загрузка постера (если файл существует)
             poster_path = os.path.join(posters_dir, data['poster'])
             if os.path.exists(poster_path):
                 with open(poster_path, 'rb') as f:
@@ -146,7 +172,8 @@ class Command(BaseCommand):
                     movie.save()
                 self.stdout.write(self.style.SUCCESS(f'Создан фильм: {movie.title} (с постером)'))
             else:
-                self.stdout.write(self.style.WARNING(f'Создан фильм: {movie.title} (постер не найден: {data["poster"]})'))
+                self.stdout.write(
+                    self.style.WARNING(f'Создан фильм: {movie.title} (постер не найден: {data["poster"]})'))
 
             movies.append(movie)
 
