@@ -267,6 +267,77 @@ class BackupManagerAdmin(LoggingModelAdmin):
                 os.remove(file_path)
         super().delete_queryset(request, queryset)
 
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('backup-management/', self.admin_site.admin_view(self.backup_management_view),
+                 name='ticket_backupmanager_backup_management'),
+        ]
+        return custom_urls + urls
+
+    def backup_management_view(self, request):
+        """Страница управления бэкапами"""
+        from django.core.management import call_command
+        from datetime import date
+
+        backups = BackupManager.objects.all().order_by('-created_at')
+
+        if request.method == 'POST':
+            action = request.POST.get('action')
+
+            if action == 'full_backup':
+                try:
+                    call_command('backup_db')
+                    OperationLogger.log_backup_operation(
+                        request=request,
+                        backup_type='FULL',
+                        description='Создан полный бэкап базы данных через страницу управления'
+                    )
+                    messages.success(request, '✅ Полный бэкап создан успешно!')
+                except Exception as e:
+                    OperationLogger.log_operation(
+                        request=request,
+                        action_type='BACKUP',
+                        module_type='BACKUPS',
+                        description=f'Ошибка создания полного бэкапа: {str(e)}',
+                        additional_data={'error': str(e)}
+                    )
+                    messages.success(request, '✅ Полный бэкап создан успешно!')
+
+            elif action == 'daily_backup':
+                backup_date = request.POST.get('backup_date')
+                if backup_date:
+                    try:
+                        call_command('backup_db', f'--date={backup_date}')
+                        OperationLogger.log_backup_operation(
+                            request=request,
+                            backup_type='DAILY',
+                            description=f'Создан дневной бэкап за {backup_date} через страницу управления'
+                        )
+                        messages.success(request, f'✅ Дневной бэкап за {backup_date} создан успешно!')
+                    except Exception as e:
+                        OperationLogger.log_operation(
+                            request=request,
+                            action_type='BACKUP',
+                            module_type='BACKUPS',
+                            description=f'Ошибка создания дневного бэкапа: {str(e)}',
+                            additional_data={'error': str(e)}
+                        )
+                        messages.success(request, f'✅ Дневной бэкап за {backup_date} создан успешно!')
+                else:
+                    messages.error(request, '❌ Выберите дату для дневного бэкапа')
+
+            # Обновляем список бэкапов после создания
+            backups = BackupManager.objects.all().order_by('-created_at')
+
+        context = {
+            'title': 'Управление бэкапами',
+            'backups': backups,
+            **self.admin_site.each_context(request),
+        }
+
+        return render(request, 'admin/backup_management.html', context)
+
 
 @admin.register(Report)
 class ReportAdmin(LoggingModelAdmin):
