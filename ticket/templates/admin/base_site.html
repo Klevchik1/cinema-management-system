@@ -21,7 +21,25 @@
         color: white;
     }
 </style>
-<a href="{% url 'admin:backup_management' %}" class="backup-link">
+<a href="{% url 'admin:ticket_backupmanager_backup_management' %}" class="backup-link">
     🗃️ Управление бэкапами
 </a>
+
+<script>
+// Добавляем кнопку "Отменить изменения" на страницы редактирования
+document.addEventListener('DOMContentLoaded', function() {
+    const submitRow = document.querySelector('.submit-row');
+    if (submitRow) {
+        const cancelButton = document.createElement('input');
+        cancelButton.type = 'button';
+        cancelButton.value = 'Отменить изменения';
+        cancelButton.className = 'closelink';
+        cancelButton.style.marginRight = '10px';
+        cancelButton.onclick = function() {
+            window.history.back();
+        };
+        submitRow.prepend(cancelButton);
+    }
+});
+</script>
 {% endblock %}

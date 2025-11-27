@@ -236,19 +236,32 @@ class Movie(models.Model):
         verbose_name = "Фильм"
         verbose_name_plural = "Фильмы"
 
+
 class Screening(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, verbose_name='Фильм')
     hall = models.ForeignKey(Hall, on_delete=models.CASCADE, verbose_name='Зал')
     start_time = models.DateTimeField(verbose_name='Время начала')
-    end_time = models.DateTimeField(verbose_name='Время окончания')
+    end_time = models.DateTimeField(verbose_name='Время окончания', blank=True, null=True)
     price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Цена')
 
     def clean(self):
+        # ВАЖНО: Сначала рассчитываем end_time если нужно
+        if self.movie and self.start_time:
+            self.end_time = self.start_time + self.movie.duration + timedelta(minutes=10)
+
         if self.start_time and self.end_time and self.start_time >= self.end_time:
             raise ValidationError("Время окончания сеанса должно быть позже времени начала")
 
-        if self.movie and self.start_time and not self.end_time:
-            self.end_time = self.start_time + self.movie.duration + timedelta(minutes=10)
+        # Проверяем время работы кинотеатра
+        if self.start_time:
+            local_start = timezone.localtime(self.start_time)
+            if local_start.hour < 8 or local_start.hour >= 23:
+                raise ValidationError("Сеансы могут начинаться только с 8:00 до 23:00")
+
+        if self.end_time:
+            local_end = timezone.localtime(self.end_time)
+            if local_end.hour >= 24 or (local_end.hour == 0 and local_end.minute > 0):
+                raise ValidationError("Сеанс должен заканчиваться до 24:00")
 
         if self.hall and self.start_time and self.end_time:
             overlapping_screenings = Screening.objects.filter(
@@ -261,8 +274,12 @@ class Screening(models.Model):
                 raise ValidationError("Сеанс пересекается с другим сеансом в этом зале")
 
     def save(self, *args, **kwargs):
-        if self.movie and self.start_time and not self.end_time:
+        # Всегда пересчитываем end_time при сохранении
+        if self.movie and self.start_time:
             self.end_time = self.start_time + self.movie.duration + timedelta(minutes=10)
+
+        # Вызываем clean для дополнительных проверок
+        self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

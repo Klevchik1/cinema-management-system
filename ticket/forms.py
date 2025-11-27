@@ -276,6 +276,57 @@ class ScreeningForm(forms.ModelForm):
 
             # Проверяем что сеанс заканчивается до 24:00
             local_end_time = timezone.localtime(end_time)
+            if local_end_time.hour >= 24 or (local_end_time.hour == 0 and local_end_time.minute > 0):
+                raise ValidationError(
+                    f"Сеанс заканчивается в {local_end_time.strftime('%H:%M')}. "
+                    f"Кинотеатр работает до 24:00. Выберите более раннее время начала."
+                )
+
+            # Проверяем пересечения с другими сеансами
+            overlapping_screenings = Screening.objects.filter(
+                hall=hall,
+                start_time__lt=end_time,
+                end_time__gt=start_time
+            ).exclude(pk=self.instance.pk if self.instance else None)
+
+            if overlapping_screenings.exists():
+                overlapping = overlapping_screenings.first()
+                raise ValidationError(
+                    f"Сеанс пересекается с другим сеансом: "
+                    f"{overlapping.movie.title} в {timezone.localtime(overlapping.start_time).strftime('%H:%M')}"
+                )
+
+        return cleaned_data
+
+    def clean_start_time(self):
+        start_time = self.cleaned_data.get('start_time')
+        if start_time:
+            # Приводим к локальному времени для проверки
+            local_time = timezone.localtime(start_time)
+            hour = local_time.hour
+
+            # Проверяем что время между 8:00 и 23:00
+            if hour < 8 or hour >= 23:
+                raise ValidationError("Сеансы могут начинаться только с 8:00 до 23:00")
+
+            # Проверяем что сеанс не в прошлом
+            if start_time < timezone.now():
+                raise ValidationError("Нельзя создавать сеансы в прошлом")
+
+        return start_time
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get('start_time')
+        movie = cleaned_data.get('movie')
+        hall = cleaned_data.get('hall')
+
+        if start_time and movie and hall:
+            # Рассчитываем время окончания
+            end_time = start_time + movie.duration + timedelta(minutes=10)
+
+            # Проверяем что сеанс заканчивается до 24:00
+            local_end_time = timezone.localtime(end_time)
             if local_end_time.hour >= 24:
                 raise ValidationError("Сеанс должен заканчиваться до 24:00")
 

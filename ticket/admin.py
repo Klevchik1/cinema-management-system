@@ -108,7 +108,7 @@ class ScreeningAdmin(LoggingModelAdmin):
     list_display = ('movie', 'hall', 'start_time', 'end_time', 'price', 'is_active_screening')
     list_filter = ('hall', 'start_time', 'movie')
     search_fields = ('movie__title', 'hall__name')
-    readonly_fields = ('end_time',)
+    readonly_fields = ('end_time',)  # Делаем поле только для чтения
     list_per_page = 20
     date_hierarchy = 'start_time'
 
@@ -124,6 +124,10 @@ class SeatAdmin(LoggingModelAdmin):
     list_display = ('hall', 'row', 'number')
     list_filter = ('hall', 'row')
     search_fields = ('hall__name',)
+
+    # Запрещаем добавление новых мест
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Ticket)
@@ -142,6 +146,10 @@ class PendingRegistrationAdmin(LoggingModelAdmin):
     search_fields = ('email', 'name', 'surname')
     readonly_fields = ('created_at',)
 
+    # Запрещаем добавление новых ожидающих регистраций
+    def has_add_permission(self, request):
+        return False
+
     def is_expired(self, obj):
         return obj.is_expired()
 
@@ -155,6 +163,10 @@ class PasswordResetRequestAdmin(LoggingModelAdmin):
     list_filter = ('created_at', 'is_used')
     search_fields = ('email',)
     readonly_fields = ('created_at',)
+
+    # Запрещаем добавление новых запросов восстановления пароля
+    def has_add_permission(self, request):
+        return False
 
     def is_expired(self, obj):
         return obj.is_expired()
