@@ -75,6 +75,19 @@ class User(AbstractUser):
 
         logger.info(f"Telegram unlinked for user {self.email}")
 
+        # Логируем операцию если есть request
+        try:
+            from .logging_utils import OperationLogger
+            OperationLogger.log_system_operation(
+                action_type='UPDATE',
+                module_type='USERS',
+                description=f'Отвязка Telegram для пользователя {self.email}',
+                object_id=self.id,
+                object_repr=str(self)
+            )
+        except Exception as e:
+            logger.error(f"Error logging telegram unlink: {e}")
+
     def generate_verification_code(self):
         """Генерация кода подтверждения"""
         import random

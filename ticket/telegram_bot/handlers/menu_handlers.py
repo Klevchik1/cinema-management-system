@@ -412,6 +412,20 @@ async def unlink_telegram_handler(query):
         def unlink_user_telegram(user_id):
             user_obj = User.objects.filter(telegram_chat_id=str(user_id)).first()
             if user_obj:
+                # ЛОГИРОВАНИЕ: Начало отвязки
+                from ticket.logging_utils import OperationLogger
+                OperationLogger.log_system_operation(
+                    action_type='UPDATE',
+                    module_type='USERS',
+                    description=f'Начало отвязки Telegram для пользователя {user_obj.email} через бота',
+                    object_id=user_obj.id,
+                    object_repr=str(user_obj),
+                    additional_data={
+                        'telegram_user_id': user_id,
+                        'source': 'telegram_bot'
+                    }
+                )
+
                 user_obj.unlink_telegram()
                 return user_obj
             return None
@@ -419,7 +433,8 @@ async def unlink_telegram_handler(query):
         db_user = await unlink_user_telegram(user.id)
 
         if db_user:
-            # Показываем сообщение об успехе с инструкцией по повторной привязке
+            # ЛОГИРОВАНИЕ уже происходит в методе unlink_telegram модели User
+
             success_text = f"""
 ✅ <b>Telegram успешно отвязан!</b>
 
@@ -434,7 +449,6 @@ async def unlink_telegram_handler(query):
 """
             await query.edit_message_text(success_text, parse_mode='HTML')
 
-            # Убираем Reply-клавиатуру
             from telegram import ReplyKeyboardRemove
             await query.message.reply_text(
                 "Клавиатура скрыта. Используйте /start для получения кода привязки.",
@@ -445,4 +459,17 @@ async def unlink_telegram_handler(query):
 
     except Exception as e:
         logger.error(f"Error unlinking telegram: {e}")
+
+        # ЛОГИРОВАНИЕ: Ошибка при отвязке
+        from ticket.logging_utils import OperationLogger
+        await sync_to_async(OperationLogger.log_system_operation)(
+            action_type='OTHER',
+            module_type='SYSTEM',
+            description=f'Ошибка при отвязке Telegram через бота для пользователя {user.id}',
+            additional_data={
+                'telegram_user_id': user.id,
+                'error': str(e)
+            }
+        )
+
         await query.edit_message_text("❌ Ошибка при отвязке Telegram.")

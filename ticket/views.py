@@ -723,9 +723,12 @@ def profile(request):
                 request=request,
                 action_type='UPDATE',
                 module_type='USERS',
-                description=f'Отвязка Telegram для пользователя {request.user.email}',
+                description=f'Отвязка Telegram для пользователя {request.user.email} через сайт',
                 object_id=request.user.id,
-                object_repr=str(request.user)
+                object_repr=str(request.user),
+                additional_data={
+                    'source': 'website'
+                }
             )
 
             messages.success(request, 'Telegram аккаунт успешно отвязан!')
@@ -966,10 +969,13 @@ def profile(request):
                 request=request,
                 action_type='OTHER',
                 module_type='USERS',
-                description=f'Запрос привязки Telegram для пользователя {request.user.email}',
+                description=f'Генерация кода привязки Telegram для пользователя {request.user.email}',
                 object_id=request.user.id,
                 object_repr=str(request.user),
-                additional_data={'verification_code': verification_code}
+                additional_data={
+                    'verification_code': verification_code,
+                    'source': 'website'
+                }
             )
 
             messages.success(

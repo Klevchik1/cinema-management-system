@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler
 from telegram.ext import filters
 import logging
@@ -79,9 +80,37 @@ class CinemaBot:
                     text=message,
                     parse_mode='HTML'
                 )
+
+                # ЛОГИРОВАНИЕ: Отправка уведомления
+                from ticket.logging_utils import OperationLogger
+                await sync_to_async(OperationLogger.log_system_operation)(
+                    action_type='OTHER',
+                    module_type='TICKETS',
+                    description=f'Отправка Telegram уведомления о покупке билетов пользователю {user.email}',
+                    object_id=tickets[0].id if tickets else None,
+                    object_repr=f"Группа билетов {tickets[0].group_id}" if tickets and tickets[0].group_id else "Билет",
+                    additional_data={
+                        'telegram_chat_id': user.telegram_chat_id,
+                        'ticket_count': len(tickets),
+                        'movie_title': tickets[0].screening.movie.title if tickets else None
+                    }
+                )
+
                 logger.info(f"Ticket notification sent to user {user.email}")
         except Exception as e:
             logger.error(f"Error sending ticket notification: {e}")
+
+            # ЛОГИРОВАНИЕ: Ошибка отправки уведомления
+            from ticket.logging_utils import OperationLogger
+            await sync_to_async(OperationLogger.log_system_operation)(
+                action_type='OTHER',
+                module_type='SYSTEM',
+                description=f'Ошибка отправки Telegram уведомления пользователю {user.email}',
+                additional_data={
+                    'telegram_chat_id': user.telegram_chat_id,
+                    'error': str(e)
+                }
+            )
 
     def format_ticket_notification(self, tickets):
         """Форматирование уведомления о билетах"""

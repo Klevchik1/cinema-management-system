@@ -38,12 +38,13 @@ async def verification_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     message_text = update.message.text.strip()
 
-    logger.info(f"Received message from user {user.id}: {message_text}")
+    logger.info(f"Received verification code from user {user.id}: {message_text}")
 
     try:
         # Сначала проверяем, не привязан ли пользователь уже
         existing_user = await get_user_by_telegram_id(user.id)
         if existing_user:
+            logger.warning(f"User {user.id} already linked to {existing_user.email}")
             await update.message.reply_text(
                 "✅ Ваш аккаунт уже привязан! Используйте кнопки для управления билетами.",
                 parse_mode='HTML'
@@ -60,20 +61,50 @@ async def verification_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             existing_user_with_same_telegram = await get_user_by_telegram_id(user.id)
 
             if existing_user_with_same_telegram:
+                logger.warning(f"Telegram {user.id} already linked to another account")
                 await update.message.reply_text(
                     "❌ Этот Telegram аккаунт уже привязан к другому пользователю.",
                     parse_mode='HTML'
                 )
                 return
 
+            # ЛОГИРОВАНИЕ: Начало привязки
+            from ticket.logging_utils import OperationLogger
+            await sync_to_async(OperationLogger.log_system_operation)(
+                action_type='UPDATE',
+                module_type='USERS',
+                description=f'Начало привязки Telegram для пользователя {django_user.email}',
+                object_id=django_user.id,
+                object_repr=str(django_user),
+                additional_data={
+                    'telegram_user_id': user.id,
+                    'telegram_username': user.username,
+                    'verification_code': message_text
+                }
+            )
+
             # Привязываем Telegram аккаунт
             django_user.telegram_chat_id = user.id
             django_user.telegram_username = user.username
             django_user.is_telegram_verified = True
-            django_user.telegram_verification_code = ''  # Очищаем код
+            django_user.telegram_verification_code = ''
 
             # Сохраняем пользователя
             await save_user(django_user)
+
+            # ЛОГИРОВАНИЕ: Успешная привязка
+            await sync_to_async(OperationLogger.log_system_operation)(
+                action_type='UPDATE',
+                module_type='USERS',
+                description=f'Успешная привязка Telegram для пользователя {django_user.email}',
+                object_id=django_user.id,
+                object_repr=str(django_user),
+                additional_data={
+                    'telegram_user_id': user.id,
+                    'telegram_username': user.username,
+                    'chat_id': django_user.telegram_chat_id
+                }
+            )
 
             success_text = (
                 "✅ <b>Аккаунт успешно привязан!</b>\n\n"
@@ -82,7 +113,6 @@ async def verification_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 "Используйте кнопки ниже для управления билетами."
             )
 
-            # Показываем меню с кнопками
             keyboard = [
                 [KeyboardButton("🎫 Мои билеты")],
                 [KeyboardButton("👤 Профиль"), KeyboardButton("ℹ️ Помощь")]
@@ -93,7 +123,18 @@ async def verification_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             logger.info(f"User {django_user.email} successfully linked Telegram account")
 
         else:
-            # Неверный код - показываем инструкцию
+            # ЛОГИРОВАНИЕ: Неверный код
+            await sync_to_async(OperationLogger.log_system_operation)(
+                action_type='OTHER',
+                module_type='AUTH',
+                description=f'Неверный код подтверждения Telegram от пользователя {user.id}',
+                additional_data={
+                    'telegram_user_id': user.id,
+                    'telegram_username': user.username,
+                    'entered_code': message_text
+                }
+            )
+
             error_text = (
                 "❌ <b>Неверный код подтверждения</b>\n\n"
                 "💡 <b>Как получить правильный код:</b>\n"
@@ -108,6 +149,20 @@ async def verification_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     except Exception as e:
         logger.error(f"Error in verification handler: {e}", exc_info=True)
+
+        # ЛОГИРОВАНИЕ: Ошибка при привязке
+        from ticket.logging_utils import OperationLogger
+        await sync_to_async(OperationLogger.log_system_operation)(
+            action_type='OTHER',
+            module_type='SYSTEM',
+            description=f'Ошибка при привязке Telegram для пользователя {user.id}',
+            additional_data={
+                'telegram_user_id': user.id,
+                'telegram_username': user.username,
+                'error': str(e)
+            }
+        )
+
         await update.message.reply_text(
             "⚠️ Произошла внутренняя ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку."
         )

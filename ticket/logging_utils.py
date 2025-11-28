@@ -127,3 +127,21 @@ class OperationLogger:
             description=description,
             additional_data={'backup_type': backup_type}
         )
+
+    @staticmethod
+    def log_system_operation(action_type, module_type, description, object_id=None, object_repr=None,
+                             additional_data=None):
+        """Логирование системных операций (без request)"""
+        try:
+            OperationLog.objects.create(
+                user=None,  # Системная операция
+                action_type=action_type,
+                module_type=module_type,
+                description=description,
+                object_id=object_id,
+                object_repr=object_repr,
+                additional_data=additional_data
+            )
+            logger.info(f"System operation logged: {action_type} - {module_type} - {description}")
+        except Exception as e:
+            logger.error(f"Error logging system operation: {e}")
