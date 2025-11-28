@@ -77,15 +77,21 @@ custom_styles = {
 }
 
 def generate_ticket_pdf(tickets):
+    """Старая функция для обратной совместимости"""
+    return generate_enhanced_ticket_pdf(tickets)
+
+
+def generate_enhanced_ticket_pdf(tickets):
+    """Классический минималистичный дизайн билета"""
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A5,
-        title=f"Билеты на сеанс",
+        title=f"Билеты на сеанс - Кинотеатр Премьера",
         leftMargin=1 * cm,
         rightMargin=1 * cm,
-        topMargin=1 * cm,
-        bottomMargin=1 * cm
+        topMargin=0.5 * cm,
+        bottomMargin=0.5 * cm
     )
 
     elements = []
@@ -93,92 +99,123 @@ def generate_ticket_pdf(tickets):
     first_ticket = tickets[0]
     total_price = sum(ticket.screening.price for ticket in tickets)
 
-    if len(tickets) == 1:
-        title_text = "БИЛЕТ НА СЕАНС"
-    else:
-        title_text = "КИНОТЕАТР 'ПРЕМЬЕРА'"
+    # Минималистичные стили
+    minimal_styles = {
+        'Header': ParagraphStyle(
+            name='Header',
+            fontName=bold_font_name,
+            fontSize=12,
+            alignment=1,
+            textColor=colors.black,
+            spaceAfter=6
+        ),
+        'Title': ParagraphStyle(
+            name='Title',
+            fontName=bold_font_name,
+            fontSize=10,
+            alignment=0,
+            textColor=colors.black,
+            spaceAfter=4
+        ),
+        'Info': ParagraphStyle(
+            name='Info',
+            fontName=base_font_name,
+            fontSize=9,
+            alignment=0,
+            textColor=colors.black,
+            spaceAfter=3
+        ),
+        'Small': ParagraphStyle(
+            name='Small',
+            fontName=base_font_name,
+            fontSize=7,
+            alignment=1,
+            textColor=colors.grey
+        ),
+        'Seat': ParagraphStyle(
+            name='Seat',
+            fontName=bold_font_name,
+            fontSize=9,
+            alignment=1,
+            textColor=colors.black
+        )
+    }
 
-    elements.append(Paragraph(title_text, custom_styles['Title']))
+    # === ЗАГОЛОВОК ===
+    elements.append(Paragraph("КИНОТЕАТР ПРЕМЬЕРА", minimal_styles['Header']))
     elements.append(Spacer(1, 0.2 * cm))
 
-    elements.append(Paragraph(f"<b>{first_ticket.screening.movie.title}</b>", custom_styles['Header']))
-    elements.append(Paragraph(f"Жанр: {first_ticket.screening.movie.genre}", custom_styles['NormalCenter']))
-    elements.append(Paragraph(f"Продолжительность: {first_ticket.screening.movie.duration}", custom_styles['NormalCenter']))
+    # Горизонтальная линия
+    elements.append(Table([['']], colWidths=[doc.width], style=[
+        ('LINEABOVE', (0, 0), (-1, -1), 1, colors.black)
+    ]))
     elements.append(Spacer(1, 0.2 * cm))
 
-    elements.append(Paragraph(f"<b>Сеанс</b>", custom_styles['Header']))
-    elements.append(Paragraph(
-        f"{first_ticket.screening.start_time.strftime('%d.%m.%Y %H:%M')} - "
-        f"{first_ticket.screening.end_time.strftime('%H:%M')}",
-        custom_styles['NormalCenter']
-    ))
-    elements.append(Paragraph(f"Зал: {first_ticket.screening.hall.name}", custom_styles['NormalCenter']))
+    # === ФИЛЬМ ===
+    elements.append(Paragraph(f"<b>ФИЛЬМ:</b> {first_ticket.screening.movie.title}", minimal_styles['Title']))
+    elements.append(Paragraph(f"Жанр: {first_ticket.screening.movie.genre}", minimal_styles['Info']))
+    elements.append(Paragraph(f"Продолжительность: {format_duration(first_ticket.screening.movie.duration)}",
+                              minimal_styles['Info']))
     elements.append(Spacer(1, 0.2 * cm))
 
-    elements.append(Paragraph(f"<b>Покупатель</b>", custom_styles['Header']))
-    elements.append(Paragraph(
-        f"{first_ticket.user.name} {first_ticket.user.surname}",
-        custom_styles['NormalCenter']
-    ))
-    elements.append(Paragraph(f"Телефон: {first_ticket.user.number}", custom_styles['NormalCenter']))
+    # === СЕАНС ===
+    screening_time = f"{first_ticket.screening.start_time.strftime('%d.%m.%Y %H:%M')}"
+    elements.append(Paragraph(f"<b>СЕАНС:</b> {screening_time}", minimal_styles['Title']))
+    elements.append(Paragraph(f"Зал: {first_ticket.screening.hall.name}", minimal_styles['Info']))
     elements.append(Spacer(1, 0.2 * cm))
 
-    ticket_data = [
-        [Paragraph("<b>Ряд</b>", custom_styles['Bold']),
-         Paragraph("<b>Место</b>", custom_styles['Bold']),
-         Paragraph("<b>Цена</b>", custom_styles['Bold'])]
-    ]
+    # === ПОКУПАТЕЛЬ ===
+    elements.append(
+        Paragraph(f"<b>ПОКУПАТЕЛЬ:</b> {first_ticket.user.name} {first_ticket.user.surname}", minimal_styles['Title']))
+    elements.append(Paragraph(f"Телефон: {first_ticket.user.number}", minimal_styles['Info']))
+    elements.append(Spacer(1, 0.2 * cm))
 
+    # === МЕСТА ===
+    elements.append(Paragraph("<b>ВЫБРАННЫЕ МЕСТА:</b>", minimal_styles['Title']))
+
+    seats_data = [['Ряд', 'Место', 'Цена']]
     for ticket in tickets:
-        ticket_data.append([
-            Paragraph(str(ticket.seat.row), custom_styles['NormalCenter']),
-            Paragraph(str(ticket.seat.number), custom_styles['NormalCenter']),
-            Paragraph(f"{ticket.screening.price} ₽", custom_styles['NormalCenter'])
+        seats_data.append([
+            Paragraph(str(ticket.seat.row), minimal_styles['Seat']),
+            Paragraph(str(ticket.seat.number), minimal_styles['Seat']),
+            Paragraph(f"{ticket.screening.price} ₽", minimal_styles['Seat'])
         ])
 
-    col_widths = [3 * cm, 3 * cm, 3 * cm]
-    ticket_table = Table(ticket_data, colWidths=col_widths, repeatRows=1)  # repeatRows=1 для повторения заголовков
-
-    table_style = TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    seats_table = Table(seats_data, colWidths=[2 * cm, 2 * cm, 2 * cm], repeatRows=1)
+    seats_table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, 0), bold_font_name),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('FONTNAME', (0, 1), (-1, -1), base_font_name),
-    ])
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(seats_table)
+    elements.append(Spacer(1, 0.2 * cm))
 
-    ticket_table.setStyle(table_style)
-
-    elements.append(ticket_table)
+    # === ИТОГО ===
+    elements.append(
+        Paragraph(f"<b>ИТОГО: {len(tickets)} билет(а) на сумму {total_price} ₽</b>", minimal_styles['Title']))
     elements.append(Spacer(1, 0.3 * cm))
 
-    elements.append(Paragraph(
-        f"<b>ИТОГО: {len(tickets)} билет(а) на сумму {total_price} ₽</b>",
-        custom_styles['NormalCenter']
-    ))
-    elements.append(Spacer(1, 0.3 * cm))
+    # === QR-КОД ===
+    qr_data = {
+        "ticket_id": tickets[0].id,
+        "group_id": tickets[0].group_id,
+        "film": first_ticket.screening.movie.title,
+        "datetime": first_ticket.screening.start_time.isoformat(),
+        "hall": first_ticket.screening.hall.name,
+        "seats": ", ".join(f"{t.seat.row}-{t.seat.number}" for t in tickets),
+        "total_price": total_price,
+        "user": f"{first_ticket.user.name} {first_ticket.user.surname}",
+        "cinema": "Кинотеатр Премьера"
+    }
 
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=6,
-        border=2,
+        border=1,
     )
-
-    qr_data = {
-        "ticket_id": tickets[0].id,
-        "film": first_ticket.screening.movie.title,
-        "datetime": first_ticket.screening.start_time.isoformat(),
-        "hall": first_ticket.screening.hall.name,
-        "seats": ", ".join(f"{t.seat.row}-{t.seat.number}" for t in tickets),
-        "price": total_price,
-        "user": f"{first_ticket.user.name} {first_ticket.user.surname}"
-    }
-
     qr.add_data(str(qr_data))
     qr.make(fit=True)
 
@@ -187,13 +224,43 @@ def generate_ticket_pdf(tickets):
     qr_img.save(qr_buffer, format="PNG")
     qr_buffer.seek(0)
 
-    elements.append(Image(qr_buffer, width=5 * cm, height=5 * cm))
-    elements.append(Paragraph(
-        f"Билет ID: {tickets[0].id} | "
-        f"Дата покупки: {timezone.now().strftime('%d.%m.%Y %H:%M')}",
-        custom_styles['SmallCenter']
-    ))
+    # QR-код по центру
+    qr_table = Table([[Image(qr_buffer, width=3.5 * cm, height=3.5 * cm)]], colWidths=[doc.width])
+    qr_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    ]))
+    elements.append(qr_table)
+    elements.append(Spacer(1, 0.1 * cm))
+
+    # === ИНФОРМАЦИЯ ПОД QR-КОДОМ ===
+    elements.append(
+        Paragraph(f"ID: {tickets[0].id} | {timezone.now().strftime('%d.%m.%Y %H:%M')}", minimal_styles['Small']))
+    elements.append(Spacer(1, 0.2 * cm))
+
+    # === ПРАВИЛА ===
+    rules_text = """
+    • Билет действителен только на указанный сеанс
+    • Приходите за 15 минут до начала
+    • Возврат возможен за 2 часа до сеанса
+    • Сохраняйте билет до конца сеанса
+    """
+    elements.append(Paragraph(rules_text, minimal_styles['Small']))
+
+    # Контакты
+    elements.append(Paragraph("📞 +7 (950) 080-19-02", minimal_styles['Small']))
 
     doc.build(elements)
     buffer.seek(0)
     return buffer
+
+
+def format_duration(duration):
+    """Форматирование длительности фильма"""
+    total_seconds = int(duration.total_seconds())
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+
+    if hours > 0:
+        return f"{hours} ч {minutes} мин"
+    else:
+        return f"{minutes} мин"

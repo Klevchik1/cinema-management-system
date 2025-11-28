@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from .models import Screening, Ticket, Seat, Movie, Hall, User
 from django.utils import timezone
-from .utils import generate_ticket_pdf
+from .utils import generate_enhanced_ticket_pdf
 from django.http import HttpResponse
 import json
 from django.contrib.admin.views.decorators import staff_member_required
@@ -592,7 +592,8 @@ def download_ticket_single(request, ticket_id):
     )
 
     try:
-        pdf_buffer = generate_ticket_pdf(tickets)
+        # ИСПОЛЬЗУЕМ УЛУЧШЕННУЮ ГЕНЕРАЦИЮ
+        pdf_buffer = generate_enhanced_ticket_pdf(tickets)
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
 
         if len(tickets) > 1:
@@ -633,7 +634,8 @@ def download_ticket_group(request, group_id):
     )
 
     try:
-        pdf_buffer = generate_ticket_pdf(tickets)
+        # ИСПОЛЬЗУЕМ УЛУЧШЕННУЮ ГЕНЕРАЦИЮ
+        pdf_buffer = generate_enhanced_ticket_pdf(tickets)
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
         filename = f"билет_{tickets[0].screening.movie.title}_{group_id[:8]}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
