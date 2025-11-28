@@ -56,7 +56,7 @@ class CinemaBot:
         self.application.add_handler(CommandHandler("help", help_handler))
         self.application.add_handler(CommandHandler("profile", profile_handler))
 
-        # Затем обработчик кнопок
+        # Затем обработчик кнопок и verification
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND,
             handle_button_click

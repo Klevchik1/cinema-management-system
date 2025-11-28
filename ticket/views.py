@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from .models import Screening, Ticket, Seat, Movie, Hall, User
 from django.utils import timezone
-from .utils import generate_enhanced_ticket_pdf
+from .utils import generate_enhanced_ticket_pdf, generate_ticket_pdf
 from django.http import HttpResponse
 import json
 from django.contrib.admin.views.decorators import staff_member_required
@@ -634,7 +634,6 @@ def download_ticket_group(request, group_id):
     )
 
     try:
-        # ИСПОЛЬЗУЕМ УЛУЧШЕННУЮ ГЕНЕРАЦИЮ
         pdf_buffer = generate_enhanced_ticket_pdf(tickets)
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
         filename = f"билет_{tickets[0].screening.movie.title}_{group_id[:8]}.pdf"
@@ -714,6 +713,23 @@ def profile(request):
                     if field in profile_form.fields:
                         profile_form[field].field.widget.attrs['class'] = 'form-control error-field'
                 messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
+
+        elif form_type == 'telegram_unlink':
+            # Отвязываем Telegram
+            request.user.unlink_telegram()
+
+            # ЛОГИРОВАНИЕ ОТВЯЗКИ TELEGRAM
+            OperationLogger.log_operation(
+                request=request,
+                action_type='UPDATE',
+                module_type='USERS',
+                description=f'Отвязка Telegram для пользователя {request.user.email}',
+                object_id=request.user.id,
+                object_repr=str(request.user)
+            )
+
+            messages.success(request, 'Telegram аккаунт успешно отвязан!')
+            return redirect('profile')
 
         elif form_type == 'email_change':
             email_form = EmailChangeForm(request.POST, user=request.user)

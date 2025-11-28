@@ -65,6 +65,16 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.email} ({self.name} {self.surname})"
 
+    def unlink_telegram(self):
+        """Отвязать Telegram аккаунт"""
+        self.telegram_chat_id = None
+        self.telegram_username = None
+        self.is_telegram_verified = False
+        self.telegram_verification_code = None
+        self.save()
+
+        logger.info(f"Telegram unlinked for user {self.email}")
+
     def generate_verification_code(self):
         """Генерация кода подтверждения"""
         import random

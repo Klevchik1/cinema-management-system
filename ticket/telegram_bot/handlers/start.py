@@ -19,12 +19,14 @@ def generate_verification_code_for_user(user):
     if user:
         return user.generate_verification_code()
     else:
-        temp_user = User()
-        return temp_user.generate_verification_code()
+        # Генерируем код без создания пользователя
+        import random
+        import string
+        return ''.join(random.choices(string.digits, k=6))
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /start с кнопочным меню"""
+    """Обработчик команды /start"""
     user = update.effective_user
 
     try:
@@ -49,28 +51,24 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(welcome_text, reply_markup=reply_markup)
 
         else:
-            # Пользователь не привязан - не показываем кнопки
-            verification_code = await generate_verification_code_for_user(db_user)
-
+            # Пользователь не привязан - просто сообщаем
             help_text = f"""
 👋 Привет, {user.first_name}!
 
-Для использования бота необходимо привязать ваш аккаунт.
+Для привязки аккаунта отправьте мне код подтверждения из личного кабинета.
 
-🔐 Код подтверждения: 
-<code>{verification_code}</code>
-
-📋 Инструкция:
+💡 <b>Как получить код:</b>
 1. Перейдите в личный кабинет на сайте
-2. В разделе Telegram введите этот код
-3. Вернитесь в бот и нажмите /start
+2. В разделе Telegram нажмите "Получить код привязки"
+3. Скопируйте полученный код
+4. Отправьте его мне в этом чате
 
-После привязки аккаунта вы сможете управлять билетами через бота!
+После привязки вы сможете управлять билетами через бота!
 """
             await update.message.reply_text(
                 help_text,
                 parse_mode='HTML',
-                reply_markup=None  # Убираем клавиатуру для непривязанных пользователей
+                reply_markup=None
             )
 
     except Exception as e:

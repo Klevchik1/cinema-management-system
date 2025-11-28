@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes, CallbackQueryHandler
 from ticket.models import User, Ticket
 from django.utils import timezone
 from asgiref.sync import sync_to_async
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 import logging
 
 logger = logging.getLogger(__name__)
@@ -137,7 +138,7 @@ async def show_tickets_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_ticket_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик нажатий на инлайн-кнопки билетов"""
+    """Обработчик нажатий на инлайн-кнопки"""
     query = update.callback_query
     await query.answer()
 
@@ -149,6 +150,10 @@ async def handle_ticket_callback(update: Update, context: ContextTypes.DEFAULT_T
     elif callback_data.startswith("download_group:"):
         group_id = callback_data.split(":")[1]
         await download_ticket_group(query, group_id)
+
+    # Добавляем обработку callback'ов профиля
+    elif callback_data in ["unlink_telegram", "cancel_profile"]:
+        await handle_profile_callback(update, context)
 
 
 async def show_main_menu_from_callback(query):
@@ -315,7 +320,14 @@ async def profile_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         profile_text += "\n✅ <b>Telegram:</b> Привязан"
 
-        await update.message.reply_text(profile_text, parse_mode='HTML')
+        # Создаем клавиатуру с кнопкой отвязки
+        keyboard = [
+            [InlineKeyboardButton("🔗 Отвязать Telegram", callback_data="unlink_telegram")],
+            [InlineKeyboardButton("❌ Отмена", callback_data="cancel_profile")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(profile_text, reply_markup=reply_markup, parse_mode='HTML')
 
     except Exception as e:
         logger.error(f"Error in profile handler: {e}")
@@ -357,6 +369,7 @@ async def handle_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if not user_verified:
         # Если пользователь не привязан, передаем обработку verification_handler
+        # который проверит, не является ли сообщение кодом подтверждения
         from .verification import verification_handler
         await verification_handler(update, context)
         return
@@ -374,3 +387,62 @@ async def handle_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         # Если это не кнопка и пользователь привязан, показываем меню
         await show_main_menu(update, context)
+
+
+async def handle_profile_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик callback'ов профиля"""
+    query = update.callback_query
+    await query.answer()
+
+    callback_data = query.data
+
+    if callback_data == "unlink_telegram":
+        await unlink_telegram_handler(query)
+
+    elif callback_data == "cancel_profile":
+        await query.edit_message_text("❌ Действие отменено.")
+
+
+async def unlink_telegram_handler(query):
+    """Обработчик отвязки Telegram"""
+    try:
+        user = query.from_user
+
+        @sync_to_async
+        def unlink_user_telegram(user_id):
+            user_obj = User.objects.filter(telegram_chat_id=str(user_id)).first()
+            if user_obj:
+                user_obj.unlink_telegram()
+                return user_obj
+            return None
+
+        db_user = await unlink_user_telegram(user.id)
+
+        if db_user:
+            # Показываем сообщение об успехе с инструкцией по повторной привязке
+            success_text = f"""
+✅ <b>Telegram успешно отвязан!</b>
+
+📧 Аккаунт: {db_user.email}
+
+💡 <b>Как привязать снова:</b>
+1. В личном кабинете на сайте нажмите "Получить код привязки"
+2. Отправьте боту команду /start
+3. Введите полученный код
+
+Или используйте команду /start в этом чате для получения кода.
+"""
+            await query.edit_message_text(success_text, parse_mode='HTML')
+
+            # Убираем Reply-клавиатуру
+            from telegram import ReplyKeyboardRemove
+            await query.message.reply_text(
+                "Клавиатура скрыта. Используйте /start для получения кода привязки.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+        else:
+            await query.edit_message_text("❌ Не удалось отвязать Telegram аккаунт.")
+
+    except Exception as e:
+        logger.error(f"Error unlinking telegram: {e}")
+        await query.edit_message_text("❌ Ошибка при отвязке Telegram.")
