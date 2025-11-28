@@ -37,6 +37,8 @@ urlpatterns = [
     path('password-reset/', views.password_reset_request, name='password_reset_request'),
     path('password-reset/code/', views.password_reset_code, name='password_reset_code'),
     path('password-reset/confirm/', views.password_reset_confirm, name='password_reset_confirm'),
+    # Руководство пользователя
+    path('about/', views.about, name='about'),
 ]
 
 if settings.DEBUG:

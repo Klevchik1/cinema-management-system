@@ -210,6 +210,11 @@ def verify_email(request):
             'email': pending_reg.email
         })
 
+    # ВАЖНОЕ ИСПРАВЛЕНИЕ: Добавляем возврат для GET запроса
+    return render(request, 'ticket/verify_email.html', {
+        'email': pending_reg.email
+    })
+
 
 def resend_verification_code(request):
     """Повторная отправка кода подтверждения"""
@@ -1117,3 +1122,49 @@ def password_reset_confirm(request):
         'form': form,
         'email': email
     })
+
+
+def about(request):
+    """Страница 'О кинотеатре' с руководством пользователя"""
+
+    # Получаем все залы из базы данных с правильной статистикой
+    from django.db.models import Count
+    halls = Hall.objects.annotate(
+        total_seats=Count('seat'),  # Правильный подсчет мест
+        total_screenings=Count('screening', distinct=True)  # Правильный подсчет сеансов
+    )
+
+    # Общая статистика кинотеатра
+    total_movies = Movie.objects.count()
+
+    # Сеансы на сегодня (только будущие)
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    total_screenings_today = Screening.objects.filter(
+        start_time__gte=timezone.now(),  # Только будущие
+        start_time__date=timezone.now().date()  # Только сегодня
+    ).count()
+
+    # Общее количество сеансов (всех)
+    total_screenings_all = Screening.objects.count()
+
+    context = {
+        'halls': halls,
+        'total_movies': total_movies,
+        'total_screenings_today': total_screenings_today,
+        'total_screenings_all': total_screenings_all,
+        'cinema_info': {
+            'name': 'Кинотеатр Премьера',
+            'description': 'Современный кинотеатр с комфортными залами и новейшим оборудованием',
+            'features': [
+                'Цифровое качество изображения 4K',
+                'Объемный звук Dolby Atmos',
+                'Комфортные кресла с откидными подлокотниками',
+                'Система кондиционирования',
+                'Доступная среда для людей с ограниченными возможностями'
+            ],
+            'working_hours': 'Ежедневно с 8:00 до 24:00'
+        }
+    }
+
+    return render(request, 'ticket/about.html', context)
