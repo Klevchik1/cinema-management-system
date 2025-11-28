@@ -1,4 +1,4 @@
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler
 from telegram.ext import filters
 import logging
 from django.conf import settings
@@ -7,6 +7,7 @@ from .handlers.start import start_handler
 from .handlers.verification import verification_handler
 from .handlers.tickets import tickets_handler
 from .handlers.download import download_handler
+from .handlers.menu_handlers import handle_button_click, help_handler, profile_handler, handle_ticket_callback
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -45,15 +46,21 @@ class CinemaBot:
 
     def setup_handlers(self):
         """Настройка обработчиков команд"""
-        # В новой версии используем self.application вместо self.application.dispatcher
+        # Обработчик инлайн-кнопок (должен быть ПЕРВЫМ)
+        self.application.add_handler(CallbackQueryHandler(handle_ticket_callback))
 
-        # Команды
+        # Затем обработчики команд
         self.application.add_handler(CommandHandler("start", start_handler))
         self.application.add_handler(CommandHandler("tickets", tickets_handler))
         self.application.add_handler(CommandHandler("download", download_handler))
+        self.application.add_handler(CommandHandler("help", help_handler))
+        self.application.add_handler(CommandHandler("profile", profile_handler))
 
-        # Обработка кодов подтверждения (любое текстовое сообщение)
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, verification_handler))
+        # Затем обработчик кнопок
+        self.application.add_handler(MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            handle_button_click
+        ))
 
         # Обработка ошибок
         self.application.add_error_handler(self.error_handler)
@@ -97,7 +104,7 @@ class CinemaBot:
             f"<b>Зал:</b> {screening.hall.name}\n"
             f"<b>Места:</b> {seats_info}\n"
             f"<b>Общая стоимость:</b> {total_price} ₽\n\n"
-            "📥 <b>Скачать билеты:</b> Используйте команду /download\n\n"
+            "📥 <b>Скачать билеты:</b> Нажмите '🎫 Мои билеты' в боте\n\n"
             "Или перейдите в личный кабинет на сайте для скачивания."
         )
         return message
