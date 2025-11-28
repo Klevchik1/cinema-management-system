@@ -329,7 +329,7 @@ def home(request):
         )
 
     if genre_filter:
-        movies = movies.filter(genre=genre_filter)
+        movies = movies.filter(genre__name=genre_filter)
 
     # Собираем данные для каждого фильма
     movies_data = []
@@ -373,7 +373,11 @@ def home(request):
     # Объединяем списки
     sorted_movies_data = movies_with_screenings + movies_without_screenings
 
-    genres = Movie.objects.values_list('genre', flat=True).distinct()
+    # Получаем названия жанров
+    genres = Movie.objects.select_related('genre').values_list(
+        'genre__name',
+        flat=True
+    ).distinct().order_by('genre__name')
 
     return render(request, 'ticket/home.html', {
         'movies': sorted_movies_data,
