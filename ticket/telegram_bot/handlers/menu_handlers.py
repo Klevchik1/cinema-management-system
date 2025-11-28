@@ -17,16 +17,18 @@ def check_user_verified(user_id):
 
 @sync_to_async
 def get_user_tickets(user_id):
-    """Получаем билеты пользователя"""
+    """Получаем только предстоящие билеты пользователя"""
     user = User.objects.filter(telegram_chat_id=str(user_id)).first()
     if not user:
         return []
 
+    # Только предстоящие сеансы (start_time > текущего времени)
     tickets = Ticket.objects.filter(
-        user=user
+        user=user,
+        screening__start_time__gt=timezone.now()  # Только будущие сеансы
     ).select_related(
         'screening__movie', 'screening__hall'
-    ).order_by('-purchase_date')
+    ).order_by('screening__start_time')  # Сортируем по дате сеанса (ближайшие первые)
 
     return list(tickets)
 
@@ -50,7 +52,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показать главное меню с кнопками"""
     user = update.effective_user
 
-    # Создаем клавиатуру с кнопками
+    # Создаем клавиатуру с 3 кнопками
     keyboard = [
         [KeyboardButton("🎫 Мои билеты")],
         [KeyboardButton("👤 Профиль"), KeyboardButton("ℹ️ Помощь")]
@@ -68,7 +70,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_tickets_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показать список билетов пользователя"""
+    """Показать список предстоящих билетов пользователя"""
     user = update.effective_user
 
     try:
@@ -76,7 +78,7 @@ async def show_tickets_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if not tickets:
             await update.message.reply_text(
-                "🎫 У вас пока нет купленных билетов.\n\n"
+                "🎫 У вас нет предстоящих сеансов.\n\n"
                 "Перейдите на сайт, чтобы купить билеты на сеансы."
             )
             return
@@ -96,7 +98,11 @@ async def show_tickets_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
             local_time = timezone.localtime(first_ticket.screening.start_time)
 
             # Формируем текст для кнопки
-            button_text = f"🎬 {first_ticket.screening.movie.title} - {local_time.strftime('%d.%m %H:%M')}"
+            movie_title = first_ticket.screening.movie.title
+            if len(movie_title) > 25:  # Обрезаем длинные названия
+                movie_title = movie_title[:22] + "..."
+
+            button_text = f"🎬 {movie_title} - {local_time.strftime('%d.%m %H:%M')}"
 
             # Создаем callback data
             callback_data = f"download_group:{group_id}"
@@ -108,8 +114,20 @@ async def show_tickets_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        response = "🎫 <b>Ваши билеты:</b>\n\n"
-        response += "Выберите билет для скачивания:\n\n"
+        # Формируем информационное сообщение
+        response = "🎫 <b>Ваши предстоящие сеансы:</b>\n\n"
+
+        # Добавляем информацию о ближайшем сеансе
+        if tickets:
+            nearest_ticket = tickets[0]  # Первый в списке (ближайший по времени)
+            local_time = timezone.localtime(nearest_ticket.screening.start_time)
+            time_until = local_time - timezone.now()
+            hours_until = int(time_until.total_seconds() // 3600)
+            minutes_until = int((time_until.total_seconds() % 3600) // 60)
+
+            response += f"⏰ <b>Ближайший сеанс через:</b> {hours_until}ч {minutes_until}мин\n\n"
+
+        response += "Выберите сеанс для скачивания билетов:"
 
         await update.message.reply_text(response, reply_markup=reply_markup, parse_mode='HTML')
 
@@ -253,14 +271,20 @@ async def profile_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ).count()
             past_tickets = total_tickets - upcoming_tickets
 
-            return user_obj, total_tickets, upcoming_tickets, past_tickets
+            # Ближайший сеанс
+            nearest_screening = Ticket.objects.filter(
+                user=user_obj,
+                screening__start_time__gt=timezone.now()
+            ).select_related('screening__movie').order_by('screening__start_time').first()
+
+            return user_obj, total_tickets, upcoming_tickets, past_tickets, nearest_screening
 
         result = await get_user_profile(user.id)
         if not result:
             await update.message.reply_text("❌ Ваш аккаунт не привязан.")
             return
 
-        db_user, total_tickets, upcoming_tickets, past_tickets = result
+        db_user, total_tickets, upcoming_tickets, past_tickets, nearest_screening = result
 
         profile_text = f"""
 👤 <b>Ваш профиль</b>
@@ -273,9 +297,24 @@ async def profile_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 • Всего билетов: {total_tickets}
 • Предстоящих сеансов: {upcoming_tickets}
 • Прошедших сеансов: {past_tickets}
-
-✅ <b>Telegram:</b> Привязан
 """
+
+        # Добавляем информацию о ближайшем сеансе
+        if nearest_screening:
+            local_time = timezone.localtime(nearest_screening.screening.start_time)
+            time_until = local_time - timezone.now()
+            hours_until = int(time_until.total_seconds() // 3600)
+            minutes_until = int((time_until.total_seconds() % 3600) // 60)
+
+            profile_text += f"""
+🎬 <b>Ближайший сеанс:</b>
+• {nearest_screening.screening.movie.title}
+• {local_time.strftime('%d.%m.%Y %H:%M')}
+• Через: {hours_until}ч {minutes_until}мин
+"""
+
+        profile_text += "\n✅ <b>Telegram:</b> Привязан"
+
         await update.message.reply_text(profile_text, parse_mode='HTML')
 
     except Exception as e:
@@ -289,18 +328,19 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📋 <b>Доступные команды:</b>
 
 <b>Основные кнопки:</b>
-🎫 Мои билеты - Просмотр и скачивание билетов
-👤 Профиль - Информация о вашем профиле
+🎫 Мои билеты - Просмотр и скачивание предстоящих сеансов
+👤 Профиль - Информация о вашем профиле и статистика
 ℹ️ Помощь - Это сообщение
 
 <b>Как скачать билеты:</b>
 1. Нажмите "🎫 Мои билеты"
-2. Выберите нужный сеанс из списка
+2. Выберите нужный предстоящий сеанс из списка
 3. Билет автоматически скачается в PDF формате
 
-<b>Текстовые команды:</b>
-/start - Главное меню
-/profile - Информация о профиле
+<b>Что отображается:</b>
+• Только предстоящие сеансы
+• Ближайшие сеансы вверху списка
+• Возможность скачать билеты для любого предстоящего сеанса
 
 📞 <b>Поддержка:</b>
 По вопросам работы бота обращайтесь в техническую поддержку.

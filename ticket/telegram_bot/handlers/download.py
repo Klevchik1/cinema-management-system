@@ -171,36 +171,3 @@ async def send_ticket_pdf(update: Update, tickets):
         logger.error(error_details)
 
         raise  # Пробрасываем ошибку дальше
-
-
-# async def download_ticket_for_user(user, ticket_id, update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     """Вспомогательная функция для скачивания билета по ID"""
-#     try:
-#         from asgiref.sync import sync_to_async
-#
-#         @sync_to_async
-#         def get_ticket(user, ticket_id):
-#             return Ticket.objects.filter(id=ticket_id, user=user).first()
-#
-#         ticket = await get_ticket(user, ticket_id)
-#
-#         if not ticket:
-#             await update.message.reply_text("❌ Билет не найден или у вас нет доступа к этому билету.")
-#             return
-#
-#         # Если билет в группе, получаем все билеты группы
-#         if ticket.group_id:
-#             @sync_to_async
-#             def get_group_tickets(group_id, user):
-#                 return list(Ticket.objects.filter(group_id=group_id, user=user))
-#
-#             tickets = await get_group_tickets(ticket.group_id, user)
-#         else:
-#             tickets = [ticket]
-#
-#         # Отправляем билет
-#         await send_ticket_pdf(update, tickets)
-#
-#     except Exception as e:
-#         logger.error(f"Error downloading specific ticket: {e}")
-#         await update.message.reply_text("❌ Ошибка при скачивании билета.")

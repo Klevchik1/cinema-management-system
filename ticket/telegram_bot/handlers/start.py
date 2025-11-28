@@ -32,10 +32,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user = await get_user_by_telegram_id(user.id)
 
         if db_user and db_user.is_telegram_verified:
-            # ПОКАЗЫВАЕМ КНОПКИ СРАЗУ
+            # ПОКАЗЫВАЕМ ТОЛЬКО 3 КНОПКИ
             keyboard = [
-                [KeyboardButton("🎫 Мои билеты"), KeyboardButton("📥 Скачать билеты")],
-                [KeyboardButton("ℹ️ Помощь"), KeyboardButton("👤 Профиль")]
+                [KeyboardButton("🎫 Мои билеты")],
+                [KeyboardButton("👤 Профиль"), KeyboardButton("ℹ️ Помощь")]
             ]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
