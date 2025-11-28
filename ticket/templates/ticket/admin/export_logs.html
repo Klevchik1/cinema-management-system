@@ -90,16 +90,42 @@
     border-radius: 5px;
     margin: 15px 0;
 }
+
+.format-features {
+    background: var(--message-success-bg);
+    border: 1px solid var(--message-success-border);
+    color: var(--message-success-text);
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.feature-list {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.feature-list li {
+    margin-bottom: 5px;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="export-container">
     <h1 style="color: var(--header-color); margin-bottom: 20px;">📊 Экспорт логов операций</h1>
-    
+
     <div class="stats-info">
-        <strong>💡 Информация:</strong> Вы можете экспортировать логи операций в различных форматах. 
+        <strong>💡 Информация:</strong> Вы можете экспортировать логи операций в различных форматах.
         Используйте фильтры для выбора нужных записей.
+    </div>
+
+    <div class="format-features">
+        <strong>🆕 Доступные форматы экспорта:</strong>
+        <ul class="feature-list">
+            <li><strong>PDF:</strong> Форматированный отчет с фиксированными ширинами столбцов и автоматическим переносом текста</li>
+            <li><strong>JSON:</strong> Полные данные в структурированном формате для дальнейшей обработки</li>
+        </ul>
     </div>
 
     <!-- Форма фильтров -->

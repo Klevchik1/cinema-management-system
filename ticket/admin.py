@@ -579,7 +579,14 @@ class OperationLogAdmin(admin.ModelAdmin):
                 action_type='EXPORT',
                 module_type='SYSTEM',
                 description=f'Экспорт логов в формате {format_type.upper()}',
-                additional_data=form.cleaned_data
+                additional_data={
+                    'start_date': str(form.cleaned_data.get('start_date')) if form.cleaned_data.get(
+                        'start_date') else None,
+                    'end_date': str(form.cleaned_data.get('end_date')) if form.cleaned_data.get('end_date') else None,
+                    'action_type': form.cleaned_data.get('action_type'),
+                    'module_type': form.cleaned_data.get('module_type'),
+                    'user': str(form.cleaned_data.get('user')) if form.cleaned_data.get('user') else None,
+                }
             )
 
             # Экспортируем в выбранный формат
