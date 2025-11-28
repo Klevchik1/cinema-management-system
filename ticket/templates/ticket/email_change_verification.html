@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Подтверждение смены email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: #ffcc00;
+            color: #000;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .code {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            letter-spacing: 5px;
+            color: #ff0000;
+            margin: 30px 0;
+            padding: 20px;
+            background: #fff;
+            border: 2px dashed #ff0000;
+            border-radius: 8px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Кинотеатр Премьера</h1>
+            <h2>Подтверждение смены email</h2>
+        </div>
+
+        <div class="content">
+            <p>Здравствуйте, <strong>{{ user.name }} {{ user.surname }}</strong>!</p>
+
+            <p>Вы запросили смену email вашего аккаунта с <strong>{{ user.email }}</strong> на <strong>{{ new_email }}</strong>.</p>
+
+            <p>Для завершения смены email введите следующий код подтверждения в вашем личном кабинете:</p>
+
+            <div class="code">{{ verification_code }}</div>
+
+            <div class="warning">
+                <p><strong>⚠️ Внимание:</strong> Код действителен в течение 30 минут.</p>
+                <p>Если это были не вы, пожалуйста, немедленно смените пароль вашего аккаунта.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>С уважением,<br>Команда кинотеатра Премьера 🎭</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                Это автоматическое сообщение, пожалуйста, не отвечайте на него.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

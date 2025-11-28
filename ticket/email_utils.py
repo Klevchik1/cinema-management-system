@@ -143,3 +143,43 @@ def send_password_reset_email(user, reset_code):
     except Exception as e:
         logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
         return False
+
+
+def send_email_change_verification(user, new_email, verification_code):
+    """Отправка кода подтверждения для смены email"""
+    try:
+        from django.core.mail import EmailMultiAlternatives
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        from django.contrib.sites.shortcuts import get_current_site
+        from django.conf import settings
+
+        subject = 'Подтверждение смены email в кинотеатре Премьера'
+
+        context = {
+            'user': user,
+            'new_email': new_email,
+            'verification_code': verification_code,
+        }
+
+        html_message = render_to_string('ticket/email_change_verification.html', context)
+        plain_message = strip_tags(html_message)
+
+        from_email = settings.DEFAULT_FROM_EMAIL
+        to_email = new_email
+
+        email = EmailMultiAlternatives(
+            subject,
+            plain_message,
+            from_email,
+            [to_email]
+        )
+        email.attach_alternative(html_message, "text/html")
+
+        result = email.send()
+        logger.info(f"Email change verification sent to {new_email}. Result: {result}")
+        return result > 0
+
+    except Exception as e:
+        logger.error(f"Failed to send email change verification to {new_email}: {str(e)}")
+        return False

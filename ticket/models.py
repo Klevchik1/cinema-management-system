@@ -114,6 +114,12 @@ class User(AbstractUser):
         # Администраторам и суперпользователям не требуется подтверждение
         return not (self.is_staff or self.is_superuser)
 
+    def save(self, *args, **kwargs):
+        # Проверяем уникальность email при сохранении
+        if self.email and User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
+            raise ValidationError('Пользователь с таким email уже существует')
+        super().save(*args, **kwargs)
+
 class PendingRegistration(models.Model):
     """Временное хранение данных регистрации до подтверждения email"""
     email = models.EmailField(unique=True)
@@ -476,3 +482,26 @@ class OperationLog(models.Model):
             except:
                 return str(self.additional_data)
         return "-"
+
+class EmailChangeRequest(models.Model):
+    """Модель для хранения запросов на смену email"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    new_email = models.EmailField()
+    verification_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def is_expired(self):
+        """Проверка истечения срока действия кода (30 минут)"""
+        from django.utils import timezone
+        expiration_time = self.created_at + timezone.timedelta(minutes=30)
+        return timezone.now() > expiration_time
+
+    def mark_as_used(self):
+        """Пометить запрос как использованный"""
+        self.is_used = True
+        self.save()
+
+    class Meta:
+        verbose_name = "Запрос смены email"
+        verbose_name_plural = "Запросы смены email"

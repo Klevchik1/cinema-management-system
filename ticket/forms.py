@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Movie, Hall, Screening, OperationLog, Genre
+from .models import User, Movie, Hall, Screening, OperationLog, Genre, EmailChangeRequest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.core.validators import RegexValidator, validate_email
@@ -118,13 +118,6 @@ class LoginForm(forms.Form):
 
 
 class UserUpdateForm(forms.ModelForm):
-    email = forms.EmailField(
-        validators=[validate_email],
-        widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ваш email'
-        })
-    )
     name = forms.CharField(
         validators=[
             RegexValidator(
@@ -164,14 +157,7 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['email', 'name', 'surname', 'number']
-
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        # Проверяем, что email не занят другим пользователем
-        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
-            raise ValidationError('Пользователь с таким email уже существует')
-        return email
+        fields = ['name', 'surname', 'number']
 
     def clean_number(self):
         number = self.cleaned_data.get('number')
@@ -588,5 +574,78 @@ class LogExportForm(forms.Form):
 
         if start_date and end_date and start_date > end_date:
             raise forms.ValidationError('Начальная дата не может быть больше конечной')
+
+        return cleaned_data
+
+
+class EmailChangeForm(forms.Form):
+    new_email = forms.EmailField(
+        label='Новый email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Введите новый email'
+        })
+    )
+    verification_code = forms.CharField(
+        label='Код подтверждения',
+        max_length=6,
+        min_length=6,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '000000',
+            'style': 'text-align: center; letter-spacing: 5px;'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_new_email(self):
+        new_email = self.cleaned_data.get('new_email')
+
+        if not self.user:
+            raise ValidationError('Пользователь не определен')
+
+        if new_email == self.user.email:
+            raise ValidationError('Новый email совпадает с текущим')
+
+        # Проверяем, не занят ли email другим пользователем (включая неподтвержденные)
+        if User.objects.filter(email=new_email).exists():
+            # Если email занят текущим пользователем (но не подтвержден) - разрешаем
+            existing_user = User.objects.get(email=new_email)
+            if existing_user.id != self.user.id:
+                raise ValidationError('Пользователь с таким email уже существует')
+
+        return new_email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        verification_code = cleaned_data.get('verification_code')
+        new_email = cleaned_data.get('new_email')
+
+        # Если введен код подтверждения, проверяем его
+        if verification_code:
+            try:
+                from .models import EmailChangeRequest
+                change_request = EmailChangeRequest.objects.filter(
+                    user=self.user,
+                    new_email=new_email,
+                    is_used=False
+                ).order_by('-created_at').first()
+
+                if not change_request:
+                    raise ValidationError('Запрос на смену email не найден')
+
+                if change_request.is_expired():
+                    change_request.delete()
+                    raise ValidationError('Время действия кода истекло. Запросите новый код.')
+
+                if change_request.verification_code != verification_code:
+                    raise ValidationError('Неверный код подтверждения')
+
+            except EmailChangeRequest.DoesNotExist:
+                raise ValidationError('Запрос на смену email не найден')
 
         return cleaned_data

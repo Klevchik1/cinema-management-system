@@ -380,19 +380,46 @@
                     <input type="hidden" name="form_type" value="profile">
 
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label for="id_email">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value="{{ form.email.value }}"
-                                class="form-control"
-                                id="id_email"
-                                placeholder="Ваш email"
-                            >
-                            {% if form.email.errors %}
-                            <div class="form-errors">{{ form.email.errors }}</div>
-                            {% endif %}
+                        <!-- Форма смены email -->
+                        <div class="card" style="margin-top: 20px;">
+                            <h3 style="color: #ffcc00; margin-bottom: 20px;">Смена email</h3>
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="email_change">
+
+                                <div class="form-group">
+                                    <label for="id_new_email">Текущий email:</label>
+                                    <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                                    <small style="color: #aaa;">Текущий email нельзя изменить через эту форму</small>
+                                </div>
+
+                                <div class="form-group">
+                                    {{ email_form.new_email.label_tag }}
+                                    {{ email_form.new_email }}
+                                    {% if email_form.new_email.errors %}
+                                        <div class="error" style="color: #ff4444; font-size: 14px;">
+                                            {{ email_form.new_email.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if active_email_change %}
+                                    <div class="form-group">
+                                        {{ email_form.verification_code.label_tag }}
+                                        {{ email_form.verification_code }}
+                                        {% if email_form.verification_code.errors %}
+                                            <div class="error" style="color: #ff4444; font-size: 14px;">
+                                                {{ email_form.verification_code.errors }}
+                                            </div>
+                                        {% endif %}
+                                        <small style="color: #ffcc00;">Код отправлен на {{ active_email_change.new_email }}</small>
+                                    </div>
+                                {% endif %}
+
+                                <button type="submit" class="btn-buy" style="margin-top: 10px;">
+                                    {% if active_email_change %}Подтвердить смену email{% else %}Запросить смену email{% endif %}
+                                </button>
+                            </form>
                         </div>
 
                         <div class="form-group">

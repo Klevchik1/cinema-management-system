@@ -24,8 +24,8 @@ from .email_utils import send_verification_email, send_welcome_email
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
 from .models import PendingRegistration
-from .models import PasswordResetRequest
-from .forms import PasswordResetRequestForm, PasswordResetCodeForm, PasswordResetForm
+from .models import PasswordResetRequest, EmailChangeRequest
+from .forms import PasswordResetRequestForm, PasswordResetCodeForm, PasswordResetForm, EmailChangeForm
 from .email_utils import send_verification_email, send_welcome_email, send_password_reset_email
 logger = logging.getLogger(__name__)
 from .forms import ReportFilterForm
@@ -684,6 +684,7 @@ def profile(request):
 
     profile_form = UserUpdateForm(instance=request.user)
     password_form = CustomPasswordChangeForm(user=request.user)
+    email_form = EmailChangeForm(user=request.user)
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
@@ -691,6 +692,7 @@ def profile(request):
         if form_type == 'profile':
             profile_form = UserUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
+                # Сохраняем только имя, фамилию и телефон
                 profile_form.save()
 
                 # ЛОГИРОВАНИЕ ОБНОВЛЕНИЯ ПРОФИЛЯ
@@ -710,6 +712,105 @@ def profile(request):
                     if field in profile_form.fields:
                         profile_form[field].field.widget.attrs['class'] = 'form-control error-field'
                 messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
+
+        elif form_type == 'email_change':
+            email_form = EmailChangeForm(request.POST, user=request.user)
+            if email_form.is_valid():
+                new_email = email_form.cleaned_data['new_email']
+                verification_code = email_form.cleaned_data.get('verification_code')
+
+                if verification_code:
+                    # Код подтвержден - меняем email
+                    from .models import EmailChangeRequest
+                    change_request = EmailChangeRequest.objects.filter(
+                        user=request.user,
+                        new_email=new_email,
+                        is_used=False
+                    ).order_by('-created_at').first()
+
+                    if change_request and change_request.verification_code == verification_code:
+                        # Меняем email
+                        old_email = request.user.email
+                        request.user.email = new_email
+                        request.user.is_email_verified = True
+                        request.user.save()
+
+                        # Помечаем запрос как использованный
+                        change_request.mark_as_used()
+
+                        # Удаляем остальные запросы
+                        EmailChangeRequest.objects.filter(user=request.user).delete()
+
+                        # ЛОГИРОВАНИЕ УСПЕШНОЙ СМЕНЫ EMAIL
+                        OperationLogger.log_operation(
+                            request=request,
+                            action_type='UPDATE',
+                            module_type='USERS',
+                            description=f'Успешная смена email с {old_email} на {new_email}',
+                            object_id=request.user.id,
+                            object_repr=str(request.user)
+                        )
+
+                        messages.success(request, 'Email успешно изменен!')
+                        return redirect('profile')
+                    else:
+                        messages.error(request, 'Неверный код подтверждения')
+
+                else:
+                    # Отправляем код подтверждения
+                    from .models import EmailChangeRequest
+                    import random
+                    import string
+
+                    # Удаляем старые запросы для этого email
+                    EmailChangeRequest.objects.filter(user=request.user, new_email=new_email).delete()
+
+                    # Создаем новый запрос
+                    verification_code = ''.join(random.choices(string.digits, k=6))
+                    change_request = EmailChangeRequest.objects.create(
+                        user=request.user,
+                        new_email=new_email,
+                        verification_code=verification_code
+                    )
+
+                    # Отправляем код подтверждения
+                    try:
+                        from .email_utils import send_email_change_verification
+                        if send_email_change_verification(request.user, new_email, verification_code):
+                            messages.success(
+                                request,
+                                f'Код подтверждения отправлен на новый email {new_email}. '
+                                f'Введите код для завершения смены email.'
+                            )
+                        else:
+                            messages.warning(
+                                request,
+                                f'Код подтверждения: {verification_code}. '
+                                f'Письмо отправлено, но возникли проблемы с доставкой.'
+                            )
+                    except Exception as e:
+                        logger.error(f"Email change verification error: {e}")
+                        messages.warning(
+                            request,
+                            f'Код подтверждения: {verification_code}. '
+                            f'Ошибка при отправке email.'
+                        )
+
+                    # ЛОГИРОВАНИЕ ЗАПРОСА СМЕНЫ EMAIL
+                    OperationLogger.log_operation(
+                        request=request,
+                        action_type='UPDATE',
+                        module_type='USERS',
+                        description=f'Запрос смены email с {request.user.email} на {new_email}',
+                        object_id=request.user.id,
+                        object_repr=str(request.user)
+                    )
+
+            else:
+                for field in email_form.errors:
+                    if field in email_form.fields:
+                        email_form[field].field.widget.attrs['class'] = 'form-control error-field'
+                messages.error(request, 'Пожалуйста, исправьте ошибки в форме смены email.')
 
         elif form_type == 'password':
             password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
@@ -734,6 +835,109 @@ def profile(request):
                     if field in password_form.fields:
                         password_form[field].field.widget.attrs['class'] = 'form-control error-field'
                 messages.error(request, 'Пожалуйста, исправьте ошибки в форме смены пароля.')
+
+        elif form_type == 'email_change':
+            email_form = EmailChangeForm(request.POST, user=request.user)
+            if email_form.is_valid():
+                new_email = email_form.cleaned_data['new_email']
+                verification_code = email_form.cleaned_data.get('verification_code')
+
+                if verification_code:
+                    # Код подтвержден - меняем email
+                    from .models import EmailChangeRequest
+                    change_request = EmailChangeRequest.objects.filter(
+                        user=request.user,
+                        new_email=new_email,
+                        is_used=False
+                    ).order_by('-created_at').first()
+
+                    if change_request and change_request.verification_code == verification_code:
+                        # Меняем email
+                        old_email = request.user.email
+                        request.user.email = new_email
+                        request.user.is_email_verified = True
+                        request.user.save()
+
+                        # Помечаем запрос как использованный
+                        change_request.mark_as_used()
+
+                        # Удаляем остальные запросы
+                        EmailChangeRequest.objects.filter(user=request.user).delete()
+
+                        # ЛОГИРОВАНИЕ УСПЕШНОЙ СМЕНЫ EMAIL
+                        OperationLogger.log_operation(
+                            request=request,
+                            action_type='UPDATE',
+                            module_type='USERS',
+                            description=f'Успешная смена email с {old_email} на {new_email}',
+                            object_id=request.user.id,
+                            object_repr=str(request.user)
+                        )
+
+                        messages.success(request, 'Email успешно изменен!')
+                        return redirect('profile')
+
+                else:
+                    # Отправляем код подтверждения
+                    from .models import EmailChangeRequest
+                    import random
+                    import string
+
+                    # Удаляем старые запросы
+                    EmailChangeRequest.objects.filter(user=request.user, new_email=new_email).delete()
+
+                    # Создаем новый запрос
+                    verification_code = ''.join(random.choices(string.digits, k=6))
+                    change_request = EmailChangeRequest.objects.create(
+                        user=request.user,
+                        new_email=new_email,
+                        verification_code=verification_code
+                    )
+
+                    # Отправляем код подтверждения
+                    try:
+                        from .email_utils import send_email_change_verification
+                        email_sent = send_email_change_verification(request.user, new_email, verification_code)
+
+                        if email_sent:
+                            messages.success(
+                                request,
+                                f'✅ Код подтверждения отправлен на новый email {new_email}. '
+                                f'Введите код для завершения смены email.'
+                            )
+                        else:
+                            # Если email не отправился, показываем код пользователю
+                            messages.warning(
+                                request,
+                                f'📧 Не удалось отправить письмо. Код подтверждения: <strong>{verification_code}</strong>. '
+                                f'Введите этот код в поле ниже.'
+                            )
+                            logger.warning(f"Email change verification failed to send to {new_email}")
+
+                    except Exception as e:
+                        logger.error(f"Email change verification error: {e}")
+                        # В случае ошибки показываем код пользователю
+                        messages.warning(
+                            request,
+                            f'📧 Ошибка при отправке email. Код подтверждения: <strong>{verification_code}</strong>. '
+                            f'Введите этот код в поле ниже.'
+                        )
+
+                    # ЛОГИРОВАНИЕ ЗАПРОСА СМЕНЫ EMAIL
+                    OperationLogger.log_operation(
+                        request=request,
+                        action_type='UPDATE',
+                        module_type='USERS',
+                        description=f'Запрос смены email с {request.user.email} на {new_email}',
+                        object_id=request.user.id,
+                        object_repr=str(request.user)
+                    )
+
+            else:
+                for field in email_form.errors:
+                    if field in email_form.fields:
+                        email_form[field].field.widget.attrs['class'] = 'form-control error-field'
+                messages.error(request, 'Пожалуйста, исправьте ошибки в форме смены email.')
 
         elif form_type == 'telegram_connect':
             # Генерация кода для привязки Telegram
@@ -760,13 +964,21 @@ def profile(request):
     telegram_connected = request.user.is_telegram_verified
     telegram_username = request.user.telegram_username
 
-    # ВАЖНО: ВСЕГДА возвращаем HttpResponse в конце функции
+    # Проверяем есть ли активные запросы на смену email
+    from .models import EmailChangeRequest
+    active_email_change = EmailChangeRequest.objects.filter(
+        user=request.user,
+        is_used=False
+    ).order_by('-created_at').first()
+
     return render(request, 'ticket/profile.html', {
         'form': profile_form,
         'password_form': password_form,
+        'email_form': email_form,
         'ticket_groups': ticket_groups,
         'telegram_connected': telegram_connected,
         'telegram_username': telegram_username,
+        'active_email_change': active_email_change,
     })
 
 
