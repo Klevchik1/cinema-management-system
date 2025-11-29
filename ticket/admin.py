@@ -152,6 +152,12 @@ class SeatAdmin(LoggingModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(Ticket)
 class TicketAdmin(LoggingModelAdmin):
@@ -173,6 +179,9 @@ class PendingRegistrationAdmin(LoggingModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def has_change_permission(self, request, obj=None):
+        return False
+
     def is_expired(self, obj):
         return obj.is_expired()
 
@@ -189,6 +198,9 @@ class PasswordResetRequestAdmin(LoggingModelAdmin):
 
     # Запрещаем добавление новых запросов восстановления пароля
     def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
     def is_expired(self, obj):
@@ -268,6 +280,9 @@ class BackupManagerAdmin(LoggingModelAdmin):
     file_size.short_description = "Size"
 
     def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
     def delete_model(self, request, obj):
