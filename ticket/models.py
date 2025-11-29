@@ -42,13 +42,13 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractUser):
     username = None
     email = models.EmailField(max_length=100, unique=True)
-    name = models.CharField(max_length=50)
-    surname = models.CharField(max_length=50)
-    number = models.CharField(max_length=50)
+    name = models.CharField(max_length=30)
+    surname = models.CharField(max_length=30)
+    number = models.CharField(max_length=20)
 
     # Telegram fields
-    telegram_chat_id = models.CharField(max_length=20, blank=True, null=True)
-    telegram_username = models.CharField(max_length=100, blank=True, null=True)
+    telegram_chat_id = models.CharField(max_length=15, blank=True, null=True)
+    telegram_username = models.CharField(max_length=32, blank=True, null=True)
     is_telegram_verified = models.BooleanField(default=False)
     telegram_verification_code = models.CharField(max_length=10, blank=True, null=True)
 
@@ -143,12 +143,19 @@ class User(AbstractUser):
             raise ValidationError('Пользователь с таким email уже существует')
         super().save(*args, **kwargs)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['number']),
+            models.Index(fields=['is_email_verified']),
+        ]
+
 class PendingRegistration(models.Model):
     """Временное хранение данных регистрации до подтверждения email"""
     email = models.EmailField(unique=True)
-    name = models.CharField(max_length=50)
-    surname = models.CharField(max_length=50)
-    number = models.CharField(max_length=50)
+    name = models.CharField(max_length=30)
+    surname = models.CharField(max_length=30)
+    number = models.CharField(max_length=20)
     password = models.CharField(max_length=128)  # Хэшированный пароль
     verification_code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -180,7 +187,7 @@ class PendingRegistration(models.Model):
 
 class PasswordResetRequest(models.Model):
     """Модель для хранения запросов на восстановление пароля"""
-    email = models.EmailField()
+    email = models.EmailField(max_length=100)
     reset_code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     is_used = models.BooleanField(default=False)
@@ -201,7 +208,7 @@ class PasswordResetRequest(models.Model):
         verbose_name_plural = "Запросы восстановления пароля"
 
 class Hall(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=30)
     rows = models.IntegerField()
     seats_per_row = models.IntegerField()
     description = models.TextField(blank=True, null=True)
@@ -232,7 +239,7 @@ class Hall(models.Model):
         verbose_name_plural = "Залы"
 
 class Genre(models.Model):
-    name = models.CharField(max_length=50, unique=True, verbose_name='Название жанра')
+    name = models.CharField(max_length=30, unique=True, verbose_name='Название жанра')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -255,7 +262,7 @@ class Movie(models.Model):
         verbose_name='Полное описание'
     )
     duration = models.DurationField()
-    genre = models.ForeignKey(  # Меняем на ForeignKey
+    genre = models.ForeignKey(
         Genre,
         on_delete=models.PROTECT,
         verbose_name='Жанр'
@@ -279,6 +286,10 @@ class Movie(models.Model):
     class Meta:
         verbose_name = "Фильм"
         verbose_name_plural = "Фильмы"
+        indexes = [
+            models.Index(fields=['title']),
+            models.Index(fields=['genre']),
+        ]
 
 
 class Screening(models.Model):
@@ -332,6 +343,11 @@ class Screening(models.Model):
     class Meta:
         verbose_name = "Сеанс"
         verbose_name_plural = "Сеансы"
+        indexes = [
+            models.Index(fields=['start_time']),
+            models.Index(fields=['hall', 'start_time']),
+            models.Index(fields=['movie', 'start_time']),
+        ]
 
 class Seat(models.Model):
     hall = models.ForeignKey(Hall, on_delete=models.CASCADE)
@@ -344,6 +360,10 @@ class Seat(models.Model):
     class Meta:
         verbose_name = "Место"
         verbose_name_plural = "Места"
+        unique_together = ('hall', 'row', 'number')
+        indexes = [
+            models.Index(fields=['hall', 'row']),
+        ]
 
 class Ticket(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -351,10 +371,20 @@ class Ticket(models.Model):
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
     purchase_date = models.DateTimeField(auto_now_add=True)
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
-    group_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    group_id = models.CharField(max_length=40, blank=True, null=True, db_index=True)
 
     class Meta:
         unique_together = ('screening', 'seat')
+        verbose_name = "Билет"
+        verbose_name_plural = "Билеты"
+        verbose_name = "Билет"
+        verbose_name_plural = "Билеты"
+        indexes = [
+            models.Index(fields=['user', 'purchase_date']),
+            models.Index(fields=['screening']),
+            models.Index(fields=['group_id']),
+            models.Index(fields=['purchase_date']),
+        ]
 
     def get_pdf_url(self):
         return reverse('download_ticket_single', args=[self.id])
@@ -364,12 +394,6 @@ class Ticket(models.Model):
         if self.group_id:
             return Ticket.objects.filter(group_id=self.group_id)
         return Ticket.objects.filter(id=self.id)
-
-    class Meta:
-        verbose_name = "Билет"
-        verbose_name_plural = "Билеты"
-        verbose_name = "Билет"
-        verbose_name_plural = "Билеты"
 
 @receiver(post_save, sender=Hall)
 def create_hall_seats(sender, instance, created, **kwargs):
@@ -385,10 +409,10 @@ def create_hall_seats(sender, instance, created, **kwargs):
 
 class BackupManager(models.Model):
     """Модель для управления бэкапами"""
-    name = models.CharField(max_length=255)
-    backup_file = models.CharField(max_length=500)
+    name = models.CharField(max_length=100)
+    backup_file = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-    backup_type = models.CharField(max_length=50, choices=[
+    backup_type = models.CharField(max_length=15, choices=[
         ('full', 'Full Backup'),
         ('daily', 'Daily Backup')
     ])
@@ -479,7 +503,7 @@ class OperationLog(models.Model):
     ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP адрес')
     user_agent = models.TextField(null=True, blank=True, verbose_name='User Agent')
     object_id = models.IntegerField(null=True, blank=True, verbose_name='ID объекта')
-    object_repr = models.CharField(max_length=255, null=True, blank=True, verbose_name='Объект')
+    object_repr = models.CharField(max_length=100, null=True, blank=True, verbose_name='Объект')
     additional_data = models.JSONField(null=True, blank=True, verbose_name='Дополнительные данные')
     timestamp = models.DateTimeField(default=timezone.now, verbose_name='Время операции')
 
