@@ -1,19 +1,17 @@
 # ticket/export_utils.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 import json
-from datetime import datetime
+import os
+from io import BytesIO
+from django.conf import settings
 from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Q
-from io import BytesIO
-from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-import os
-from django.conf import settings
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 
 class LogExporter:

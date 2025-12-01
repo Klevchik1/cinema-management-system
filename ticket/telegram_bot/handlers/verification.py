@@ -1,9 +1,8 @@
-from telegram import Update
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
-from ticket.models import User
 import logging
 from asgiref.sync import sync_to_async
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
+from telegram.ext import ContextTypes
+from ticket.models import User
 
 logger = logging.getLogger(__name__)
 

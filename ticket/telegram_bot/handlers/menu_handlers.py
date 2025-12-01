@@ -1,10 +1,9 @@
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackQueryHandler
-from ticket.models import User, Ticket
-from django.utils import timezone
-from asgiref.sync import sync_to_async
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 import logging
+from asgiref.sync import sync_to_async
+from django.utils import timezone
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
+from ticket.models import User, Ticket
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,6 @@
-from django.db.models import Sum, Count, Avg, Q
-from django.utils import timezone
-from datetime import timedelta
-from .models import Ticket, Screening, Movie, Hall
 import logging
-
+from django.db.models import Sum, Count, Q
+from .models import Ticket, Movie, Hall
 logger = logging.getLogger(__name__)
 
 

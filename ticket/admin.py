@@ -1,19 +1,18 @@
-from django.contrib.auth.admin import UserAdmin
-from .models import Hall, Movie, Screening, Seat, Ticket, User, Genre
-from django.core.management import call_command
-from django.contrib import admin
-from django.urls import path
-from django.shortcuts import render
-from django.contrib import messages
-from django.utils import timezone
 import os
-from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog
+from django.contrib import admin
+from django.contrib import messages
+from django.contrib.auth.admin import UserAdmin
+from django.core.management import call_command
 from django.http import HttpResponse
-from .report_utils import ReportGenerator
-from .forms import ReportFilterForm, MovieForm
-from django.contrib.admin.models import LogEntry
-from .logging_utils import OperationLogger
+from django.shortcuts import render
+from django.urls import path
+from django.utils import timezone
 from .export_utils import LogExporter
+from .forms import ReportFilterForm, MovieForm
+from .logging_utils import OperationLogger
+from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog
+from .models import Hall, Movie, Screening, Seat, Ticket, User, Genre
+from .report_utils import ReportGenerator
 
 
 class LoggingModelAdmin(admin.ModelAdmin):
@@ -328,7 +327,6 @@ class BackupManagerAdmin(LoggingModelAdmin):
     def backup_management_view(self, request):
         """Страница управления бэкапами"""
         from django.core.management import call_command
-        from datetime import date
 
         backups = BackupManager.objects.all().order_by('-created_at')
 

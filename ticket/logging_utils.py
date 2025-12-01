@@ -1,7 +1,6 @@
 import logging
-import json
-from django.utils import timezone
 from django.contrib.auth.models import AnonymousUser
+from django.utils import timezone
 from .models import OperationLog
 
 logger = logging.getLogger(__name__)

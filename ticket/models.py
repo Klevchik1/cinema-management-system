@@ -7,8 +7,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import timedelta
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator, validate_email
-import re
 import logging
 logger = logging.getLogger(__name__)
 import os

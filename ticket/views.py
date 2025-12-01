@@ -1,36 +1,31 @@
-from django.shortcuts import render
-from .forms import RegistrationForm, LoginForm, UserUpdateForm, CustomPasswordChangeForm
-from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
-from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
-from .models import Screening, Ticket, Seat, Movie, Hall, User
-from django.utils import timezone
-from .utils import generate_enhanced_ticket_pdf, generate_ticket_pdf
-from django.http import HttpResponse
 import json
-from django.contrib.admin.views.decorators import staff_member_required
-from .forms import MovieForm, HallForm, ScreeningForm
-from django.contrib.auth.decorators import login_required
-from datetime import timedelta
-from django.db.models import Q, Count
 import logging
-from datetime import datetime
 import uuid
-from django.urls import reverse
-from django.template.loader import render_to_string
-from .telegram_bot.bot import get_bot
-from .email_utils import send_verification_email, send_welcome_email
-from django.utils import timezone
+from datetime import datetime
+from datetime import timedelta
+
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
+from django.db.models import Q
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from .email_utils import send_verification_email
+from .forms import MovieForm, HallForm, ScreeningForm
+from .forms import PasswordResetForm, EmailChangeForm
+from .forms import RegistrationForm, LoginForm, UserUpdateForm, CustomPasswordChangeForm
+from .models import PasswordResetRequest
 from .models import PendingRegistration
-from .models import PasswordResetRequest, EmailChangeRequest
-from .forms import PasswordResetRequestForm, PasswordResetCodeForm, PasswordResetForm, EmailChangeForm
-from .email_utils import send_verification_email, send_welcome_email, send_password_reset_email
+from .models import Screening, Ticket, Seat, Movie, Hall, User
+from .utils import generate_enhanced_ticket_pdf, generate_ticket_pdf
+
 logger = logging.getLogger(__name__)
-from .forms import ReportFilterForm
-from .report_utils import ReportGenerator
-from .pdf_utils import generate_pdf_report
 from .logging_utils import OperationLogger
 
 

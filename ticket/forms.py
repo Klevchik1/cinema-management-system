@@ -1,14 +1,13 @@
-from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from .models import User, Movie, Hall, Screening, OperationLog, Genre, EmailChangeRequest
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from django.core.validators import RegexValidator, validate_email
 import re
 from datetime import date, timedelta
-from django.contrib.auth.forms import PasswordChangeForm
+from django import forms
 from django.contrib.auth import password_validation
+from django.contrib.auth.forms import PasswordChangeForm
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.utils import timezone
 from .export_utils import LogExporter
+from .models import User, Movie, Hall, Screening, OperationLog, Genre
 
 
 class RegistrationForm(forms.Form):

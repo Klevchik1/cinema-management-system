@@ -1,12 +1,10 @@
-# ticket/management/commands/backup_db.py
 import os
 from datetime import datetime
-from django.core.management.base import BaseCommand
+import psycopg2
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from django.db import connection
 from ticket.models import BackupManager
-import psycopg2
-from io import StringIO
 
 
 class Command(BaseCommand):

@@ -1,15 +1,13 @@
-from asgiref.sync import sync_to_async
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler
-from telegram.ext import filters
+import asyncio
 import logging
+from asgiref.sync import sync_to_async
 from django.conf import settings
-from ticket.models import User
-from .handlers.start import start_handler
-from .handlers.verification import verification_handler
-from .handlers.tickets import tickets_handler
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler
+from telegram.ext import filters
 from .handlers.download import download_handler
 from .handlers.menu_handlers import handle_button_click, help_handler, profile_handler, handle_ticket_callback
-import asyncio
+from .handlers.start import start_handler
+from .handlers.tickets import tickets_handler
 
 logger = logging.getLogger(__name__)
 
