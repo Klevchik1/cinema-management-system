@@ -1,0 +1,157 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0" version="29.2.1">
+  <diagram name="Главная страница" id="Главная страница">
+    <mxGraphModel dx="1520" dy="877" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="header_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="80" width="700" x="50" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="logo" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=18;" value="КИНОТЕАТР ПРЕМЬЕРА" vertex="1">
+          <mxGeometry height="30" width="250" x="70" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="user_panel_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;dashed=1;" value="" vertex="1">
+          <mxGeometry height="50" width="410" x="290" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="user_panel_text" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Панель пользователя" vertex="1">
+          <mxGeometry height="50" width="300" x="380" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="login_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Войти" vertex="1">
+          <mxGeometry height="30" width="60" x="300" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="register_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Регистрация" vertex="1">
+          <mxGeometry height="30" width="80" x="374" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="about_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="О кинотеатре" vertex="1">
+          <mxGeometry height="30" width="90" x="609" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="page_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=32;" value="Фильмы" vertex="1">
+          <mxGeometry height="40" width="100" x="350" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="messages" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Сообщения системы" vertex="1">
+          <mxGeometry height="40" width="600" x="100" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="date_filters_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="60" width="700" x="50" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="date_btn1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Сегодня" vertex="1">
+          <mxGeometry height="25" width="80" x="100" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="date_btn2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Завтра" vertex="1">
+          <mxGeometry height="25" width="80" x="200" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="date_btn3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Послезавтра" vertex="1">
+          <mxGeometry height="25" width="100" x="300" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="date_btn4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Дата 1" vertex="1">
+          <mxGeometry height="25" width="80" x="420" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="date_btn5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Дата 2" vertex="1">
+          <mxGeometry height="25" width="80" x="520" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="main_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="530" width="700" x="50" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="filters_column" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="400" width="200" x="70" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="filters_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" value="Фильтры" vertex="1">
+          <mxGeometry height="30" width="100" x="120" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="search_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Поиск фильма" vertex="1">
+          <mxGeometry height="20" width="100" x="80" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="search_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="180" x="80" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="hall_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Зал" vertex="1">
+          <mxGeometry height="20" width="100" x="80" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="hall_select" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="180" x="80" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="genre_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Жанр" vertex="1">
+          <mxGeometry height="20" width="100" x="80" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="genre_select" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="180" x="80" y="535" as="geometry" />
+        </mxCell>
+        <mxCell id="apply_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;fontSize=12;fontStyle=1;" value="Применить" vertex="1">
+          <mxGeometry height="30" width="85" x="80" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="reset_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Сбросить" vertex="1">
+          <mxGeometry height="30" width="85" x="175" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="movies_column" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="490" width="450" x="290" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_card1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="220" width="430" x="300" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_title1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Название фильма 1" vertex="1">
+          <mxGeometry height="25" width="150" x="470" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_poster1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Постер" vertex="1">
+          <mxGeometry height="90" width="150" x="310" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_meta1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Жанр: Боевик | Длительность: 120 мин" vertex="1">
+          <mxGeometry height="20" width="250" x="470" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_desc1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Краткое описание фильма..." vertex="1">
+          <mxGeometry height="40" width="250" x="470" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_details_btn1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Все сеансы" vertex="1">
+          <mxGeometry height="25" width="80" x="470" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="screenings_section1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="Ближайшие сеансы:" vertex="1">
+          <mxGeometry height="60" width="390" x="320" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="screening1_time1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="10:00" vertex="1">
+          <mxGeometry height="40" width="80" x="330" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="screening1_time2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="13:30" vertex="1">
+          <mxGeometry height="40" width="80" x="420" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="screening1_time3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="17:00" vertex="1">
+          <mxGeometry height="40" width="80" x="510" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="screening1_time4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="20:30" vertex="1">
+          <mxGeometry height="40" width="80" x="600" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_card2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="230" width="430" x="300" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_title2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Название фильма 2" vertex="1">
+          <mxGeometry height="25" width="150" x="470" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_poster2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Постер" vertex="1">
+          <mxGeometry height="90" width="150" x="310" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_meta2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Жанр: Комедия | Длительность: 95 мин" vertex="1">
+          <mxGeometry height="20" width="250" x="470" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_desc2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Краткое описание фильма..." vertex="1">
+          <mxGeometry height="40" width="250" x="470" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="movie_details_btn2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Все сеансы" vertex="1">
+          <mxGeometry height="25" width="80" x="470" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="screenings_section2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="Ближайшие сеансы:" vertex="1">
+          <mxGeometry height="60" width="390" x="320" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="screening2_time1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="11:15" vertex="1">
+          <mxGeometry height="40" width="80" x="334" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="screening2_time2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="14:45" vertex="1">
+          <mxGeometry height="40" width="80" x="430" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="screening2_time3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="18:30" vertex="1">
+          <mxGeometry height="40" width="80" x="520" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="screening2_time4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="21:45" vertex="1">
+          <mxGeometry height="40" width="80" x="614" y="740" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,177 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0" version="29.2.1">
+  <diagram name="Страница — 1" id="yHw7sU_U8kiKtJ_qkn8U">
+    <mxGraphModel dx="163274" dy="116413" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="system-boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="565" width="410" x="220" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="system-name" parent="1" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Веб-приложение &#39;Кинотеатр&#39;" vertex="1">
+          <mxGeometry height="30" width="410" x="220" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-8" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="view-sessions">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="191" y="293" />
+              <mxPoint x="191" y="183" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-9" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="password-reset">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-10" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="email-verify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-11" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="select-seats">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-12" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="buy-ticket">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-13" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="view-profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-14" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="view-order-history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-15" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="telegram-link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="user-actor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Авторизованный&amp;nbsp;&lt;div&gt;пользователь&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="80" y="272.5" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-16" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="manage-backups">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-17" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="view-reports">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-18" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="view-statistics">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-19" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="manage-screenings">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-20" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="manage-halls">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="725" y="264" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-21" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="manage-movies">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-22" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="view-sessions">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="484" y="264" />
+              <mxPoint x="484" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-23" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="select-seats">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-24" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="buy-ticket">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-25" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="view-profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-26" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="view-order-history">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="264" />
+              <mxPoint x="500" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="admin-actor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Администратор" vertex="1">
+          <mxGeometry height="60" width="30" x="727" y="244" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Авторизация" vertex="1">
+          <mxGeometry height="40" width="80" x="288.5" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="register" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Регистрация" vertex="1">
+          <mxGeometry height="40" width="80" x="288.5" y="114" as="geometry" />
+        </mxCell>
+        <mxCell id="email-verify" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Верификация email" vertex="1">
+          <mxGeometry height="40" width="105" x="276" y="264" as="geometry" />
+        </mxCell>
+        <mxCell id="password-reset" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Восстановление пароля" vertex="1">
+          <mxGeometry height="40" width="122" x="267.5" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="view-sessions" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр сеансов" vertex="1">
+          <mxGeometry height="40" width="110" x="273.5" y="163" as="geometry" />
+        </mxCell>
+        <mxCell id="select-seats" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Выбор места" vertex="1">
+          <mxGeometry height="40" width="80" x="288.5" y="312" as="geometry" />
+        </mxCell>
+        <mxCell id="buy-ticket" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Покупка билета" vertex="1">
+          <mxGeometry height="40" width="80" x="288.5" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="view-profile" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр профиля" vertex="1">
+          <mxGeometry height="40" width="80" x="288.5" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="view-order-history" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр истории заказов" vertex="1">
+          <mxGeometry height="40" width="139" x="259" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="telegram-link" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Привязка Telegram" vertex="1">
+          <mxGeometry height="40" width="80" x="288.5" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="manage-movies" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление фильмами" vertex="1">
+          <mxGeometry height="40" width="89" x="520" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="manage-halls" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление залами" vertex="1">
+          <mxGeometry height="40" width="89" x="520" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="manage-screenings" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление сеансами" vertex="1">
+          <mxGeometry height="40" width="91" x="519" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="view-statistics" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр статистики" vertex="1">
+          <mxGeometry height="40" width="91" x="519" y="207" as="geometry" />
+        </mxCell>
+        <mxCell id="view-reports" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Просмотр отчетов" vertex="1">
+          <mxGeometry height="40" width="90" x="519.5" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="manage-backups" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Управление бэкапами" vertex="1">
+          <mxGeometry height="40" width="91" x="519.5" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="conn-user-auth" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="auth" />
+        <mxCell id="conn-user-register" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="register" />
+        <mxCell id="conn-user-email-verify" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="email-verify" />
+        <mxCell id="conn-user-password-reset" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="password-reset" />
+        <mxCell id="conn-user-view-sessions" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="view-sessions" />
+        <mxCell id="conn-user-select-seats" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="select-seats" />
+        <mxCell id="conn-user-buy-ticket" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="buy-ticket" />
+        <mxCell id="conn-user-view-profile" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="view-profile" />
+        <mxCell id="conn-user-view-history" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="view-order-history" />
+        <mxCell id="conn-user-telegram" edge="1" parent="1" source="user-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.333;entryX=0;entryY=0.5;" target="telegram-link" />
+        <mxCell id="conn-admin-movies" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.333;entryX=1;entryY=0.5;" target="manage-movies" />
+        <mxCell id="conn-admin-halls" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.333;entryX=1;entryY=0.5;" target="manage-halls" />
+        <mxCell id="conn-admin-screenings" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.333;entryX=1;entryY=0.5;" target="manage-screenings" />
+        <mxCell id="conn-admin-statistics" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.333;entryX=1;entryY=0.5;" target="view-statistics" />
+        <mxCell id="conn-admin-reports" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.333;entryX=1;entryY=0.5;" target="view-reports" />
+        <mxCell id="conn-admin-backups" edge="1" parent="1" source="admin-actor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.333;entryX=1;entryY=0.5;" target="manage-backups" />
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-3" edge="1" parent="1" source="_GpEzqKoikkQSsa0V9dN-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-4" edge="1" parent="1" source="_GpEzqKoikkQSsa0V9dN-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="register">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-5" edge="1" parent="1" source="_GpEzqKoikkQSsa0V9dN-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="view-sessions">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="165" y="145" />
+              <mxPoint x="165" y="183" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_GpEzqKoikkQSsa0V9dN-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Гость" vertex="1">
+          <mxGeometry height="60" width="30" x="80" y="125" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
