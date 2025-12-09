@@ -8,6 +8,12 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 from .export_utils import LogExporter
 from .models import User, Movie, Hall, Screening, OperationLog, Genre, AgeRating
+from django import forms
+from django.utils.html import format_html
+from django.utils import timezone
+from decimal import Decimal
+from django import forms
+import datetime
 
 
 class RegistrationForm(forms.Form):
@@ -397,6 +403,57 @@ class ScreeningForm(forms.ModelForm):
                 )
 
         return cleaned_data
+
+
+class DateTimeInput(forms.DateTimeInput):
+    input_type = 'datetime-local'
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('format', '%Y-%m-%dT%H:%M')
+        super().__init__(*args, **kwargs)
+
+    def format_value(self, value):
+        # Преобразуем DateTime в формат для input[type="datetime-local"]
+        if isinstance(value, datetime.datetime):
+            value = value.strftime('%Y-%m-%dT%H:%M')
+        return value
+
+
+class ScreeningAdminForm(forms.ModelForm):
+    """Кастомная форма для админки Screening с автоматическим расчетом цены"""
+
+    price_calculation = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 8,
+            'cols': 80,
+            'readonly': 'readonly',
+            'style': 'font-family: monospace; font-size: 12px; white-space: pre; background-color: #f8f9fa;',
+            'class': 'price-calculation-field'
+        }),
+        label='Расчет стоимости',
+        help_text='Цена рассчитывается автоматически при выборе зала и времени'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Делаем поле price readonly
+        self.fields['price'].widget.attrs['readonly'] = True
+        self.fields['price'].widget.attrs['style'] = 'background-color: #f0f0f0;'
+        self.fields['price'].help_text = 'Рассчитывается автоматически'
+
+        # Устанавливаем начальные значения
+        self.fields['price_calculation'].initial = "Выберите зал и время сеанса для расчета цены"
+
+        # Если объект уже сохранен - показываем расчет
+        if self.instance.pk and self.instance.hall and self.instance.start_time:
+            calculation_text = self.instance.get_price_calculation_explanation()
+            self.fields['price_calculation'].initial = calculation_text
+
+    class Meta:
+        model = Screening
+        fields = '__all__'
 
 
 class DailyBackupForm(forms.Form):

@@ -8,7 +8,7 @@ from django.shortcuts import render
 from django.urls import path
 from django.utils import timezone
 from .export_utils import LogExporter
-from .forms import ReportFilterForm, MovieForm
+from .forms import ReportFilterForm, MovieForm, ScreeningAdminForm
 from .logging_utils import OperationLogger
 from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog, AgeRating, \
     TicketStatus
@@ -232,15 +232,56 @@ class ScreeningAdmin(LoggingModelAdmin):
     list_display = ('movie', 'hall', 'start_time', 'end_time', 'price', 'is_active_screening')
     list_filter = ('hall', 'start_time', 'movie')
     search_fields = ('movie__title', 'hall__name')
-    readonly_fields = ('end_time',)  # Делаем поле только для чтения
+    readonly_fields = ('end_time',)
     list_per_page = 20
     date_hierarchy = 'start_time'
+    form = ScreeningAdminForm
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('movie', 'hall', 'start_time', 'end_time')
+        }),
+        ('Стоимость билета', {
+            'fields': ('price', 'price_calculation'),
+            'description': 'Цена рассчитывается автоматически на основе типа зала и времени сеанса'
+        }),
+    )
 
     def is_active_screening(self, obj):
         return obj.start_time > timezone.now()
 
     is_active_screening.boolean = True
     is_active_screening.short_description = 'Активный'
+
+    def price_display(self, obj):
+        """Отображаем цену в списке с информацией о расчете"""
+        return f"{obj.price} руб."
+
+    price_display.short_description = 'Цена'
+
+    def is_active_screening(self, obj):
+        return obj.start_time > timezone.now()
+
+    is_active_screening.boolean = True
+    is_active_screening.short_description = 'Активный'
+
+    def save_model(self, request, obj, form, change):
+        """Переопределяем сохранение для логирования"""
+        # Цена уже рассчитана в save() модели
+        super().save_model(request, obj, form, change)
+
+        OperationLogger.log_model_operation(
+            request=request,
+            action_type='UPDATE' if change else 'CREATE',
+            instance=obj,
+            description=f"{'Изменен' if change else 'Создан'} сеанс. Цена: {obj.price} руб. (авторасчет)"
+        )
+
+    class Media:
+        css = {
+            'all': ('admin/css/screening_price.css',)
+        }
+        js = ('admin/js/screening_price_calculation.js',)
 
 
 @admin.register(Seat)

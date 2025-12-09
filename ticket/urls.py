@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin/screening/add/', views.screening_add, name='screening_add'),
     path('admin/screening/edit/<int:screening_id>/', views.screening_edit, name='screening_edit'),
     path('admin/screening/delete/<int:screening_id>/', views.screening_delete, name='screening_delete'),
+    path('admin/screening/calculate-price/', views.calculate_screening_price, name='calculate_screening_price'),
     # Профиль
     path('profile/', views.profile, name='profile'),
     path('download-ticket/<int:ticket_id>/', views.download_ticket_single, name='download_ticket_single'),

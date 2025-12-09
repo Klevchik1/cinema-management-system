@@ -351,6 +351,12 @@ class Screening(models.Model):
     end_time = models.DateTimeField(verbose_name='Время окончания', blank=True, null=True)
     price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Цена')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Сохраняем старые значения, но только если они существуют
+        self._old_hall = self.hall if self.pk else None
+        self._old_start_time = self.start_time if self.pk else None
+
     def clean(self):
         # ВАЖНО: Сначала рассчитываем end_time если нужно
         if self.movie and self.start_time:
@@ -380,17 +386,114 @@ class Screening(models.Model):
             if overlapping_screenings.exists():
                 raise ValidationError("Сеанс пересекается с другим сеансом в этом зале")
 
+    def get_hall_type_and_base_price(self):
+        """Определить тип зала и базовую цену по названию зала"""
+        if not self.hall:
+            return "не определен", 350
+
+        hall_name = self.hall.name
+
+        if 'VIP' in hall_name:
+            return "VIP", 1100  # Среднее между 1000-1200
+        elif 'Love' in hall_name:
+            return "Love Hall", 900  # Среднее между 800-1000
+        elif 'Комфорт' in hall_name:
+            return "Комфорт", 550  # Среднее между 500-600
+        elif 'IMAX' in hall_name:
+            return "IMAX", 800  # Среднее между 700-900
+        else:
+            return "Стандарт", 350  # Среднее между 300-400
+
+    def get_time_multiplier_and_description(self):
+        """Определить множитель и описание по времени"""
+        if not self.start_time:
+            return 1.0, "время не указано"
+
+        local_time = timezone.localtime(self.start_time)
+        hour = local_time.hour
+
+        if 8 <= hour < 12:
+            return 0.7, f"утро ({hour}:00)"
+        elif 12 <= hour < 16:
+            return 0.9, f"день ({hour}:00)"
+        elif 16 <= hour < 20:
+            return 1.2, f"вечер ({hour}:00)"
+        else:
+            return 1.4, f"ночь ({hour}:00)"
+
+    def calculate_ticket_price(self):
+        """Рассчитать стоимость билета"""
+        from decimal import Decimal
+
+        hall_type, base_price = self.get_hall_type_and_base_price()
+        time_multiplier, time_desc = self.get_time_multiplier_and_description()
+
+        final_price = Decimal(str(int(base_price * time_multiplier)))
+        return final_price
+
+    def get_price_calculation_explanation(self):
+        """Сгенерировать объяснение расчета цены"""
+        if not self.hall or not self.start_time:
+            return "Выберите зал и время сеанса для расчета цены"
+
+        hall_type, base_price = self.get_hall_type_and_base_price()
+        time_multiplier, time_desc = self.get_time_multiplier_and_description()
+        calculated_price = self.calculate_ticket_price()
+
+        explanation = (
+            f"📊 РАСЧЕТ СТОИМОСТИ БИЛЕТА:\n"
+            f"──────────────────────────\n"
+            f"• Зал: '{self.hall.name}' → тип: {hall_type}\n"
+            f"• Базовая цена: {base_price} руб.\n"
+            f"• Время сеанса: {time_desc}\n"
+            f"• Множитель времени: {time_multiplier}\n"
+            f"──────────────────────────\n"
+            f"• ИТОГО: {base_price} × {time_multiplier} = {calculated_price} руб.\n"
+            f"──────────────────────────\n"
+            f"*Цена фиксируется при сохранении"
+        )
+
+        return explanation
+
+    @property
+    def calculated_price_display(self):
+        """Только для чтения: отображение рассчитанной цены"""
+        if self.hall and self.start_time:
+            return f"{self.calculate_ticket_price()} руб. (авторасчет)"
+        return "—"
+
     def save(self, *args, **kwargs):
-        # Всегда пересчитываем end_time при сохранении
+        # Пересчитываем end_time при сохранении
         if self.movie and self.start_time:
             self.end_time = self.start_time + self.movie.duration + timedelta(minutes=10)
+
+        # Автоматически рассчитываем цену
+        if not self.pk:  # Новый объект
+            if self.hall and self.start_time:
+                self.price = self.calculate_ticket_price()
+            else:
+                # Устанавливаем цену по умолчанию, если нет зала или времени
+                self.price = 350
+        else:
+            # Для существующего объекта проверяем, изменились ли зал или время
+            if self._old_hall is not None or self._old_start_time is not None:
+                if (self.hall != self._old_hall) or (self.start_time != self._old_start_time):
+                    if self.hall and self.start_time:
+                        self.price = self.calculate_ticket_price()
 
         # Вызываем clean для дополнительных проверок
         self.clean()
         super().save(*args, **kwargs)
 
+        # Обновляем старые значения
+        if self.pk:
+            self._old_hall = self.hall
+            self._old_start_time = self.start_time
+
     def __str__(self):
-        return f"{self.movie.title} - {self.hall.name} ({self.start_time.strftime('%d.%m.%Y %H:%M')})"
+        if self.movie and self.hall and self.start_time:
+            return f"{self.movie.title} - {self.hall.name} ({self.start_time.strftime('%d.%m.%Y %H:%M')})"
+        return "Новый сеанс"
 
     class Meta:
         verbose_name = "Сеанс"

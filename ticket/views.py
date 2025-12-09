@@ -24,6 +24,12 @@ from .models import PasswordResetRequest, AgeRating
 from .models import PendingRegistration
 from .models import Screening, Ticket, Seat, Movie, Hall, User
 from .utils import generate_enhanced_ticket_pdf, generate_ticket_pdf
+from django.utils import timezone
+from datetime import datetime
+from django.http import JsonResponse
+import json
+from decimal import Decimal
+import random
 
 logger = logging.getLogger(__name__)
 from .logging_utils import OperationLogger
@@ -1534,3 +1540,46 @@ def cancel_refund_request(request, ticket_id):
         messages.error(request, f'Не удалось отменить возврат: {message}')
 
     return redirect('profile')
+
+
+def calculate_screening_price(request):
+    """AJAX endpoint для расчета цены"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            hall_name = data.get('hall_name', '')
+            time_str = data.get('time', '')
+
+            # Логика расчета (упрощенная)
+            hour = int(time_str.split(':')[0]) if ':' in time_str else 12
+
+            # Определяем базовую цену
+            base_price = 350
+            if 'VIP' in hall_name:
+                base_price = 1100
+            elif 'Love' in hall_name:
+                base_price = 900
+            elif 'Комфорт' in hall_name:
+                base_price = 550
+            elif 'IMAX' in hall_name:
+                base_price = 800
+
+            # Определяем множитель
+            if 8 <= hour < 12:
+                multiplier = 0.7
+            elif 12 <= hour < 16:
+                multiplier = 0.9
+            elif 16 <= hour < 20:
+                multiplier = 1.2
+            else:
+                multiplier = 1.4
+
+            final_price = int(base_price * multiplier)
+
+            return JsonResponse({
+                'success': True,
+                'price': final_price,
+                'calculation': f'{base_price} × {multiplier} = {final_price} руб.'
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
