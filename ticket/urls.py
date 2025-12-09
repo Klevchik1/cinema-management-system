@@ -27,10 +27,12 @@ urlpatterns = [
     path('admin/screening/add/', views.screening_add, name='screening_add'),
     path('admin/screening/edit/<int:screening_id>/', views.screening_edit, name='screening_edit'),
     path('admin/screening/delete/<int:screening_id>/', views.screening_delete, name='screening_delete'),
-
+    # Профиль
     path('profile/', views.profile, name='profile'),
     path('download-ticket/<int:ticket_id>/', views.download_ticket_single, name='download_ticket_single'),
     path('download-ticket-group/<str:group_id>/', views.download_ticket_group, name='download_ticket_group'),
+    path('ticket/<int:ticket_id>/refund/', views.request_ticket_refund, name='request_ticket_refund'),
+    path('ticket/<int:ticket_id>/cancel-refund/', views.cancel_refund_request, name='cancel_refund_request'),
     # Почта
     path('verify-email/', views.verify_email, name='verify_email'),
     path('resend-verification-code/', views.resend_verification_code, name='resend_verification_code'),

@@ -653,10 +653,42 @@ def download_ticket_group(request, group_id):
 def profile(request):
     # Получаем все билеты пользователя
     all_tickets = Ticket.objects.filter(user=request.user).select_related(
-        'screening__movie', 'screening__hall', 'seat'
+        'screening__movie', 'screening__hall', 'seat', 'status'
     ).order_by('-purchase_date')
 
-    # Группируем билеты по group_id вручную
+    def get_group_status(ticket, group_id, groups_dict):
+        """Определяет статус группы билетов"""
+        if group_id in groups_dict:
+            # Если группа уже существует, проверяем смешанные статусы
+            existing_status = groups_dict[group_id].get('group_status')
+            if existing_status == 'mixed':
+                return 'mixed'
+
+            if ticket.status:
+                if existing_status and existing_status != ticket.status.code:
+                    return 'mixed'
+                return ticket.status.code
+
+        return ticket.status.code if ticket.status else 'unknown'
+
+    def get_group_status_display(status):
+        """Получает отображаемое название статуса"""
+        if not status:
+            return "Неизвестно"
+
+        status_displays = {
+            'active': '✅ Активен',
+            'refund_requested': '⏳ Запрошен возврат',
+            'refunded': '💰 Возвращен',
+            'used': '🎬 Использован',
+            'cancelled': '❌ Отменен',
+            'expired': '⌛ Просрочен',
+            'mixed': '🔄 Смешанные статусы'
+        }
+
+        return status_displays.get(status.code, status.name)
+
+    # Группируем билеты по group_id с учетом статусов
     groups_dict = {}
 
     for ticket in all_tickets:
@@ -671,20 +703,41 @@ def profile(request):
                 'start_time': ticket.screening.start_time,
                 'purchase_date': ticket.purchase_date,
                 'screening': ticket.screening,
+                'screening_id': ticket.screening.id,
                 'seats': [],
                 'ticket_count': 0,
-                'total_price': 0
+                'total_price': 0,
+                'first_ticket_id': ticket.id,
+                'refund_requested_at': ticket.refund_requested_at,
+                'refund_processed_at': ticket.refund_processed_at,
+                'is_future_screening': ticket.screening.start_time > timezone.now(),
+                'can_be_refunded': ticket.can_be_refunded()[0] if hasattr(ticket, 'can_be_refunded') else False,
+                'refund_message': ticket.can_be_refunded()[1] if hasattr(ticket, 'can_be_refunded') else '',
+                # Важное: определяем статус группы
+                'group_status': get_group_status(ticket, group_id, groups_dict),
+                'status_display': get_group_status_display(ticket.status),
             }
 
         # Добавляем информацию о месте
         groups_dict[group_id]['seats'].append({
             'row': ticket.seat.row,
-            'number': ticket.seat.number
+            'number': ticket.seat.number,
+            'ticket_id': ticket.id,
+            'status': ticket.status.code if ticket.status else 'unknown',
+            'status_display': ticket.get_status_display() if hasattr(ticket, 'get_status_display') else "Неизвестно"
         })
         groups_dict[group_id]['ticket_count'] += 1
         groups_dict[group_id]['total_price'] += ticket.screening.price
 
-    # Преобразуем словарь в список и сортируем по дате
+        # Обновляем статус группы если есть возвращенный билет
+        if ticket.status and ticket.status.code == 'refunded':
+            groups_dict[group_id]['group_status'] = 'refunded'
+            groups_dict[group_id]['status_display'] = 'Возвращен'
+        elif ticket.status and ticket.status.code == 'refund_requested':
+            groups_dict[group_id]['group_status'] = 'refund_requested'
+            groups_dict[group_id]['status_display'] = 'Запрошен возврат'
+
+    # Преобразуем словарь в список и сортируем
     ticket_groups = sorted(groups_dict.values(), key=lambda x: x['purchase_date'], reverse=True)
 
     profile_form = UserUpdateForm(instance=request.user)
@@ -1408,3 +1461,76 @@ def about(request):
     }
 
     return render(request, 'ticket/about.html', context)
+
+
+@login_required
+@require_POST
+def request_ticket_refund(request, ticket_id):
+    """Автоматический возврат билета с проверкой условий"""
+    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
+
+    # Логируем попытку возврата
+    OperationLogger.log_operation(
+        request=request,
+        action_type='UPDATE',
+        module_type='TICKETS',
+        description=f'Попытка возврата билета #{ticket_id}',
+        object_id=ticket.id,
+        object_repr=str(ticket),
+        additional_data={
+            'movie': ticket.screening.movie.title,
+            'screening_time': ticket.screening.start_time.isoformat(),
+            'seat': f"Ряд {ticket.seat.row}, Место {ticket.seat.number}",
+            'current_status': ticket.status.code if ticket.status else 'unknown'
+        }
+    )
+
+    success, message = ticket.request_refund()
+
+    if success:
+        # ЛОГИРОВАНИЕ УСПЕШНОГО ВОЗВРАТА
+        OperationLogger.log_operation(
+            request=request,
+            action_type='UPDATE',
+            module_type='TICKETS',
+            description=f'Успешный возврат билета #{ticket_id}',
+            object_id=ticket.id,
+            object_repr=str(ticket),
+            additional_data={
+                'movie': ticket.screening.movie.title,
+                'refund_amount': ticket.screening.price,
+                'refund_time': ticket.refund_processed_at.isoformat()
+            }
+        )
+
+        messages.success(request, message)
+    else:
+        messages.error(request, f'❌ {message}')
+
+    return redirect('profile')
+
+
+@login_required
+@require_POST
+def cancel_refund_request(request, ticket_id):
+    """Отмена запроса на возврат"""
+    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
+
+    success, message = ticket.cancel_refund_request()
+
+    if success:
+        # ЛОГИРОВАНИЕ ОТМЕНЫ ВОЗВРАТА
+        OperationLogger.log_operation(
+            request=request,
+            action_type='UPDATE',
+            module_type='TICKETS',
+            description=f'Отмена запроса возврата билета #{ticket_id}',
+            object_id=ticket.id,
+            object_repr=str(ticket)
+        )
+
+        messages.success(request, 'Запрос на возврат отменен.')
+    else:
+        messages.error(request, f'Не удалось отменить возврат: {message}')
+
+    return redirect('profile')

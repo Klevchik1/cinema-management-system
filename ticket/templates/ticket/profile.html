@@ -339,6 +339,78 @@
         .section-title i {
             font-size: 24px;
         }
+
+        /* Стили для статусов билетов */
+        .status-active { color: #4CAF50; }
+        .status-refund_requested { color: #FF9800; }
+        .status-refunded { color: #2196F3; }
+        .status-used { color: #9C27B0; }
+        .status-cancelled { color: #F44336; }
+        .status-expired { color: #FF9800; }
+        .status-mixed { color: #FFC107; }
+        .status-unknown { color: #aaa; }
+
+        /* Стили для кнопок возврата */
+        .btn-refund {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            color: #fff;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-refund:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-cancel-refund {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            color: #fff;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-cancel-refund:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(102, 102, 102, 0.4);
+        }
+
+        /* Информационные блоки */
+        .refund-info {
+            background: rgba(255, 152, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid #FF9800;
+        }
+
+        .refund-processed {
+            background: rgba(33, 150, 243, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid #2196F3;
+        }
+
+        .screening-ended {
+            background: rgba(156, 39, 176, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid #9C27B0;
+        }
     </style>
 </head>
 <body>
@@ -610,6 +682,16 @@
             <div class="profile-card">
                 <h2 style="color: #ffcc00; margin-bottom: 20px;">🎫 История покупок</h2>
 
+                <!-- Информация о политике возврата -->
+                <div style="background: rgba(255, 204, 0, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffcc00;">
+                    <p style="color: #fff; margin-bottom: 10px;">
+                        <strong>📋 Политика возврата:</strong> Возврат возможен за 30 минут до сеанса. Полная стоимость возвращается.
+                    </p>
+                    <p style="color: #aaa; font-size: 14px;">
+                        💡 Для возврата нажмите кнопку "Вернуть" рядом с билетом
+                    </p>
+                </div>
+
                 {% if ticket_groups %}
                     {% for group in ticket_groups %}
                     <div class="ticket-card">
@@ -651,6 +733,55 @@
                                 <strong>Общая стоимость:</strong><br>
                                 {{ group.total_price }} ₽
                             </div>
+                            <div class="info-item">
+                                <strong>Статус:</strong><br>
+                                <span class="status-{{ group.group_status }}">
+                                    {{ group.status_display }}
+                                </span>
+
+                                {% if group.refund_processed_at %}
+                                    <br><small style="color: #aaa;">
+                                        Возврат: {{ group.refund_processed_at|date:"d.m.Y H:i" }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
+                            {% if group.group_status == 'active' and group.can_be_refunded %}
+                                <!-- Кнопка возврата для активных билетов -->
+                                <form method="post" action="{% url 'request_ticket_refund' group.first_ticket_id %}"
+                                      onsubmit="return confirm('Вернуть билет? Полная стоимость будет возвращена.')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-buy"
+                                            style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+                                        🔄 Вернуть билет
+                                    </button>
+                                    <small style="color: #ccc; margin-left: 10px;">
+                                        {{ group.refund_message }}
+                                    </small>
+                                </form>
+                            {% elif group.group_status == 'refunded' %}
+                                <!-- Информация о возвращенном билете -->
+                                <div style="background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 5px;">
+                                    <p style="color: #2196F3; margin: 0;">
+                                        ✅ Билет возвращен {{ group.refund_processed_at|date:"d.m.Y H:i" }}
+                                    </p>
+                                    <p style="color: #ccc; font-size: 14px; margin: 5px 0 0 0;">
+                                        Полная стоимость возвращена
+                                    </p>
+                                </div>
+                            {% elif group.group_status == 'active' and not group.can_be_refunded %}
+                                <!-- Билет активен, но возврат невозможен -->
+                                <div style="background: rgba(244, 67, 54, 0.1); padding: 10px; border-radius: 5px;">
+                                    <p style="color: #F44336; margin: 0;">
+                                        ⚠️ Возврат невозможен
+                                    </p>
+                                    <p style="color: #ccc; font-size: 14px; margin: 5px 0 0 0;">
+                                        {{ group.refund_message }}
+                                    </p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -728,6 +859,53 @@
                     field.parentNode.insertBefore(inputContainer, field);
                     inputContainer.appendChild(field);
                     inputContainer.appendChild(toggleButton);
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // Функция для подтверждения возврата
+        function confirmRefund() {
+            return confirm("Вы уверены, что хотите вернуть билет?\n\n✅ Возвращается полная стоимость\n⚠️ После возврата билет станет недействительным\n\nДля продолжения нажмите OK");
+        }
+
+        // Функция для подтверждения отмены возврата
+        function confirmCancelRefund() {
+            return confirm("Вы уверены, что хотите отменить запрос на возврат?\n\nБилет снова станет активным и действительным");
+        }
+
+        // Проверка времени для возврата
+        function checkRefundTime(startTimeStr, ticketId) {
+            const startTime = new Date(startTimeStr);
+            const now = new Date();
+            const timeDiff = startTime - now;
+            const minutesDiff = Math.floor(timeDiff / (1000 * 60));
+
+            if (minutesDiff < 30) {
+                alert(`Возврат невозможен!\n\nДо сеанса осталось ${minutesDiff} минут.\nВозврат возможен только за 30 минут до начала.`);
+                return false;
+            }
+
+            return confirmRefund();
+        }
+
+        // Автоматически подсвечиваем билеты, которые можно вернуть
+        document.addEventListener('DOMContentLoaded', function() {
+            // Находим все кнопки возврата
+            const refundButtons = document.querySelectorAll('form[action*="refund"] button[type="submit"]');
+
+            refundButtons.forEach(button => {
+                const form = button.closest('form');
+                const ticketCard = form.closest('.ticket-card');
+
+                if (ticketCard) {
+                    // Находим время сеанса
+                    const screeningTimeElement = ticketCard.querySelector('.info-item:nth-child(2)');
+                    if (screeningTimeElement) {
+                        const timeText = screeningTimeElement.textContent.split(': ')[1];
+                        // Можно добавить дополнительную логику проверки времени
+                    }
                 }
             });
         });

@@ -269,7 +269,7 @@ class Genre(models.Model):
 
 
 class AgeRating(models.Model):
-    """Модель для возрастных рейтингов (соответствует 3NF)"""
+    """Модель для возрастных рейтингов """
     name = models.CharField(
         max_length=10,
         unique=True,
@@ -417,6 +417,41 @@ class Seat(models.Model):
             models.Index(fields=['hall', 'row']),
         ]
 
+class TicketStatus(models.Model):
+    """Модель для статусов билетов"""
+    code = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name='Код статуса'
+    )
+    name = models.CharField(
+        max_length=30,
+        verbose_name='Название статуса'
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Описание статуса'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активный статус'
+    )
+    can_be_refunded = models.BooleanField(
+        default=False,
+        verbose_name='Можно вернуть из этого статуса'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Статус билета'
+        verbose_name_plural = 'Статусы билетов'
+        ordering = ['id']
+
 class Ticket(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     screening = models.ForeignKey(Screening, on_delete=models.CASCADE)
@@ -424,11 +459,26 @@ class Ticket(models.Model):
     purchase_date = models.DateTimeField(auto_now_add=True)
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
     group_id = models.CharField(max_length=40, blank=True, null=True, db_index=True)
+    status = models.ForeignKey(
+        TicketStatus,
+        on_delete=models.PROTECT,
+        verbose_name='Статус билета'
+    )
+
+    refund_requested_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Запрос возврата'
+    )
+
+    refund_processed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Обработан возврат'
+    )
 
     class Meta:
         unique_together = ('screening', 'seat')
-        verbose_name = "Билет"
-        verbose_name_plural = "Билеты"
         verbose_name = "Билет"
         verbose_name_plural = "Билеты"
         indexes = [
@@ -436,7 +486,125 @@ class Ticket(models.Model):
             models.Index(fields=['screening']),
             models.Index(fields=['group_id']),
             models.Index(fields=['purchase_date']),
+            models.Index(fields=['status']),
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Устанавливаем статус по умолчанию при создании
+        if not self.pk and not self.status_id:
+            try:
+                default_status = TicketStatus.objects.filter(is_active=True).first()
+                if default_status:
+                    self.status = default_status
+            except TicketStatus.DoesNotExist:
+                pass
+
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем статус при первом сохранении
+        if not self.pk and not self.status_id:
+            try:
+                active_status = TicketStatus.objects.filter(code='active', is_active=True).first()
+                if active_status:
+                    self.status = active_status
+                else:
+                    # Создаем статус по умолчанию, если его нет
+                    active_status = TicketStatus.objects.create(
+                        code='active',
+                        name='Активный',
+                        description='Билет активен и действителен',
+                        is_active=True,
+                        can_be_refunded=True
+                    )
+                    self.status = active_status
+            except Exception as e:
+                logger.error(f"Error setting default ticket status: {e}")
+
+        super().save(*args, **kwargs)
+
+    def can_be_refunded(self):
+        """Проверяет, можно ли вернуть билет с учетом всех условий"""
+        from django.utils import timezone
+
+        if not self.status or self.status.code != 'active':
+            return False, 'Билет не активен'
+
+        # Проверяем временное ограничение: не менее 30 минут до начала
+        time_until_screening = self.screening.start_time - timezone.now()
+        minutes_until = time_until_screening.total_seconds() / 60
+
+        if minutes_until < 30:
+            return False, f'Возврат невозможен. До сеанса осталось {int(minutes_until)} минут'
+
+        # Проверяем что сеанс еще не начался
+        if self.screening.start_time <= timezone.now():
+            return False, 'Сеанс уже начался'
+
+        return True, 'Возврат возможен'
+
+    def request_refund(self):
+        """Запрос возврата билета с автоматической обработкой"""
+        from django.utils import timezone
+
+        # Проверяем можно ли вернуть
+        can_refund, message = self.can_be_refunded()
+
+        if not can_refund:
+            return False, message
+
+        try:
+            # Если все условия соблюдены, сразу обрабатываем возврат
+            refunded_status = TicketStatus.objects.get(code='refunded')
+            self.status = refunded_status
+            self.refund_requested_at = timezone.now()
+            self.refund_processed_at = timezone.now()  # сразу обработан
+            self.save()
+
+            # Логируем автоматический возврат
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Автоматический возврат билета #{self.id}, фильм: {self.screening.movie.title}")
+
+            return True, '✅ Билет успешно возвращен! Полная стоимость будет возвращена.'
+
+        except TicketStatus.DoesNotExist as e:
+            logger.error(f"Статус 'refunded' не найден: {e}")
+            return False, 'Ошибка: статус возврата не найден в системе'
+        except Exception as e:
+            logger.error(f"Ошибка при возврате билета #{self.id}: {e}")
+            return False, f'Ошибка при обработке возврата: {str(e)}'
+
+    def process_refund(self):
+        """Обработка возврата (админ)"""
+        try:
+            refunded_status = TicketStatus.objects.get(code='refunded')
+            if self.status.code != 'refund_requested':
+                return False, 'Билет не запрашивал возврат'
+
+            self.status = refunded_status
+            self.refund_processed_at = timezone.now()
+            self.save()
+            return True, 'Возврат обработан'
+        except TicketStatus.DoesNotExist:
+            return False, 'Статус "Возвращен" не найден'
+
+    def cancel_refund_request(self):
+        """Отмена запроса на возврат"""
+        try:
+            active_status = TicketStatus.objects.get(code='active')
+            if self.status.code != 'refund_requested':
+                return False, 'Билет не запрашивал возврат'
+
+            self.status = active_status
+            self.refund_requested_at = None
+            self.save()
+            return True, 'Запрос на возврат отменен'
+        except TicketStatus.DoesNotExist:
+            return False, 'Статус "Активный" не найден'
+
+    def get_status_display(self):
+        """Получить отображаемое название статуса"""
+        return self.status.name if self.status else "Неизвестно"
 
     def get_pdf_url(self):
         return reverse('download_ticket_single', args=[self.id])

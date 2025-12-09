@@ -10,7 +10,8 @@ from django.utils import timezone
 from .export_utils import LogExporter
 from .forms import ReportFilterForm, MovieForm
 from .logging_utils import OperationLogger
-from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog, AgeRating
+from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog, AgeRating, \
+    TicketStatus
 from .models import Hall, Movie, Screening, Seat, Ticket, User, Genre
 from .report_utils import ReportGenerator
 from django import forms
@@ -259,22 +260,103 @@ class SeatAdmin(LoggingModelAdmin):
         return False
 
 
+@admin.register(TicketStatus)
+class TicketStatusAdmin(LoggingModelAdmin):
+    """Админ-класс для управления статусами билетов"""
+    list_display = ('code', 'name', 'can_be_refunded', 'is_active', 'created_at')
+    list_filter = ('is_active', 'can_be_refunded')
+    search_fields = ('code', 'name', 'description')
+    readonly_fields = ('created_at', 'updated_at')
+    list_editable = ('is_active', 'can_be_refunded')
+
+    fieldsets = (
+        (None, {
+            'fields': ('code', 'name', 'description')
+        }),
+        ('Настройки', {
+            'fields': ('is_active', 'can_be_refunded')
+        }),
+        ('Системная информация', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
 @admin.register(Ticket)
 class TicketAdmin(LoggingModelAdmin):
-    list_display = ('user', 'screening', 'seat', 'purchase_date')
-    list_filter = ('screening', 'purchase_date', 'user')
+    list_display = ('id', 'user', 'screening', 'seat', 'get_status_display', 'purchase_date', 'refund_requested_at')
+    list_filter = ('status', 'purchase_date', 'user', 'refund_requested_at')
     search_fields = ('user__email', 'screening__movie__title')
-    readonly_fields = ('purchase_date',)
+    readonly_fields = ('purchase_date', 'refund_requested_at', 'refund_processed_at')
     list_per_page = 20
+
+    actions = ['process_refunds', 'cancel_refunds']
+
+    def get_status_display(self, obj):
+        return obj.get_status_display()
+
+    get_status_display.short_description = 'Статус'
 
     def has_add_permission(self, request):
         return False
 
     def has_change_permission(self, request, obj=None):
-        return False
+        return True
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def process_refunds(self, request, queryset):
+        """Action для обработки возвратов"""
+        processed = 0
+        errors = []
+
+        for ticket in queryset:
+            if ticket.status.code == 'refund_requested':
+                success, message = ticket.process_refund()
+                if success:
+                    processed += 1
+
+                    # ЛОГИРОВАНИЕ
+                    OperationLogger.log_model_operation(
+                        request=request,
+                        action_type='UPDATE',
+                        instance=ticket,
+                        description=f'Обработка возврата билета #{ticket.id}'
+                    )
+                else:
+                    errors.append(f"Билет #{ticket.id}: {message}")
+
+        if processed:
+            self.message_user(request, f'✅ Обработано возвратов: {processed}')
+
+        if errors:
+            self.message_user(request, f'❌ Ошибки: {"; ".join(errors)}', messages.ERROR)
+
+    process_refunds.short_description = "✅ Обработать возвраты"
+
+    def cancel_refunds(self, request, queryset):
+        """Action для отмены запросов на возврат"""
+        cancelled = 0
+
+        for ticket in queryset:
+            if ticket.status.code == 'refund_requested':
+                success, message = ticket.cancel_refund_request()
+                if success:
+                    cancelled += 1
+
+                    # ЛОГИРОВАНИЕ
+                    OperationLogger.log_model_operation(
+                        request=request,
+                        action_type='UPDATE',
+                        instance=ticket,
+                        description=f'Отмена возврата билета #{ticket.id}'
+                    )
+
+        self.message_user(request, f'✅ Отменено запросов на возврат: {cancelled}')
+
+    cancel_refunds.short_description = "❌ Отменить запросы возврата"
 
 
 @admin.register(PendingRegistration)

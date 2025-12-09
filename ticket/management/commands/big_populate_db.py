@@ -9,7 +9,8 @@ from django.conf import settings
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
-from ticket.models import Hall, Movie, Screening, Seat, User, Genre, AgeRating
+# ДОБАВЛЯЕМ ИМПОРТ МОДЕЛИ TicketStatus
+from ticket.models import Hall, Movie, Screening, Seat, User, Genre, AgeRating, TicketStatus
 
 fake = Faker('ru_RU')
 
@@ -20,6 +21,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.clear_old_data()
         self.create_admin()
+        self.create_ticket_statuses()  # ДОБАВЛЯЕМ СОЗДАНИЕ СТАТУСОВ БИЛЕТОВ
         genres = self.create_genres()  # создаем жанры первыми
         age_ratings = self.create_age_ratings()  # создаем возрастные рейтинги
         halls = self.create_halls()
@@ -29,13 +31,85 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('✅ База успешно заполнена тестовыми данными!'))
 
     def clear_old_data(self):
-        """Очистка старых данных (кроме суперпользователей и жанров)"""
+        """Очистка старых данных (кроме суперпользователей)"""
         Screening.objects.all().delete()
         Seat.objects.all().delete()
         Movie.objects.all().delete()
         AgeRating.objects.all().delete()
         Hall.objects.all().delete()
         Genre.objects.all().delete()
+        TicketStatus.objects.all().delete()
+
+    def create_ticket_statuses(self):
+        """Создание статусов билетов для системы возвратов"""
+        self.stdout.write('Создание статусов билетов...')
+
+        statuses = [
+            {
+                'code': 'active',
+                'name': 'Активный',
+                'description': 'Билет активен и действителен',
+                'is_active': True,
+                'can_be_refunded': True
+            },
+            {
+                'code': 'refund_requested',
+                'name': 'Запрошен возврат',
+                'description': 'Пользователь запросил возврат билета',
+                'is_active': True,
+                'can_be_refunded': False
+            },
+            {
+                'code': 'refunded',
+                'name': 'Возвращен',
+                'description': 'Билет возвращен, деньги возвращены',
+                'is_active': True,
+                'can_be_refunded': False
+            },
+            {
+                'code': 'used',
+                'name': 'Использован',
+                'description': 'Билет использован на сеансе',
+                'is_active': True,
+                'can_be_refunded': False
+            },
+            {
+                'code': 'cancelled',
+                'name': 'Отменен',
+                'description': 'Билет отменен (сеанс отменен)',
+                'is_active': True,
+                'can_be_refunded': False
+            },
+            {
+                'code': 'expired',
+                'name': 'Просрочен',
+                'description': 'Срок действия билета истек',
+                'is_active': True,
+                'can_be_refunded': False
+            }
+        ]
+
+        created_count = 0
+        updated_count = 0
+
+        for status_data in statuses:
+            obj, created = TicketStatus.objects.update_or_create(
+                code=status_data['code'],
+                defaults=status_data
+            )
+            if created:
+                created_count += 1
+                self.stdout.write(self.style.SUCCESS(f'✅ Создан статус: {status_data["code"]} - {status_data["name"]}'))
+            else:
+                updated_count += 1
+                self.stdout.write(
+                    self.style.WARNING(f'📝 Обновлен статус: {status_data["code"]} - {status_data["name"]}'))
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'✅ Статусы билетов готовы! Создано: {created_count}, Обновлено: {updated_count}, Всего: {TicketStatus.objects.count()}'
+            )
+        )
 
     def create_admin(self):
         """Создание администратора если его нет"""
@@ -187,7 +261,7 @@ class Command(BaseCommand):
                 'age_rating': '12+',
                 'poster': 'interstellar.jpg',
                 'short_description': 'Команда исследователей совершает путешествие через червоточину в поисках нового дома для человечества.',
-                'description': 'В недалёком будущем из-за глобального потепления и пыльных бурь человечество переживает продовольственный кризис. Бывший пилот НАСА Купер ведёт фермерское хозяйство вместе со своей семьёй в американской глубинке. Когда его дочь Мёрф утверждает, что в её комнате живёт призрак, Купер понимает, что аномалии гравитации — это послание от пришельцев, которые дают человечеству шанс на спасение. Он присоединяется к секретной экспедиции НАСА, целью которой является поиск нового дома для человечества за пределами Солнечной системы через червоточину.'
+                'description': 'В недалёком будущем из-за глобального потепления и пыльных бурь человечество переживает продольственный кризис. Бывший пилот НАСА Купер ведёт фермерское хозяйство вместе со своей семьёй в американской глубинке. Когда его дочь Мёрф утверждает, что в её комнате живёт призрак, Купер понимает, что аномалии гравитации — это послание от пришельцев, которые дают человечеству шанс на спасение. Он присоединяется к секретной экспедиции НАСА, целью которой является поиск нового дома для человечества за пределами Солнечной системы через червоточину.'
             },
             {
                 'title': 'Оппенгеймер',
@@ -437,10 +511,10 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.WARNING(f'Пропущен сеанс: {e}'))
                         continue
 
-            # Выводим статистику
-            self.stdout.write(self.style.SUCCESS(f'Всего создано {created_count} сеансов'))
-            for movie in movies:
-                self.stdout.write(self.style.SUCCESS(f'  {movie.title}: {screenings_per_movie[movie.id]} сеансов'))
+        # Выводим статистику
+        self.stdout.write(self.style.SUCCESS(f'Всего создано {created_count} сеансов'))
+        for movie in movies:
+            self.stdout.write(self.style.SUCCESS(f'  {movie.title}: {screenings_per_movie[movie.id]} сеансов'))
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -457,4 +531,9 @@ class Command(BaseCommand):
             '--skip-screenings',
             action='store_true',
             help='Пропустить создание сеансов',
+        )
+        parser.add_argument(
+            '--skip-statuses',
+            action='store_true',
+            help='Пропустить создание статусов билетов',
         )
