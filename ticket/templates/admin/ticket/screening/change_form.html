@@ -1,0 +1,298 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+/* Стили для поля расчета стоимости (встроенные) */
+#id_price_calculation {
+    background-color: var(--body-bg);
+    color: var(--body-fg);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    border-radius: 4px;
+    margin-top: 8px;
+    white-space: pre;
+    width: 100%;
+    max-width: 800px;
+    height: 220px;
+    resize: vertical;
+    overflow: auto;
+}
+
+/* Улучшенная стилизация для темной темы */
+@media (prefers-color-scheme: dark), 
+       [data-theme="dark"] {
+    
+    #id_price_calculation {
+        background-color: #1a1a1a !important;
+        color: #e0e0e0 !important;
+        border-color: #444 !important;
+    }
+    
+    /* Обеспечиваем контрастность в темной теме */
+    .field-price_calculation .help {
+        color: #aaa !important;
+    }
+}
+
+/* Поле рассчитанной цены */
+#id_price {
+    background-color: var(--body-bg);
+    color: var(--body-fg);
+    border: 1px solid var(--border-color);
+    font-weight: bold;
+    padding: 8px 12px;
+    width: 200px;
+    font-size: 16px;
+    text-align: center;
+}
+
+/* Для темной темы */
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+    
+    #id_price {
+        background-color: #1a1a1a !important;
+        color: #fff !important;
+        border-color: #555 !important;
+    }
+}
+
+/* Заголовки для секции стоимости */
+.field-calculated_price label,
+.field-price_calculation label {
+    font-weight: bold;
+    color: var(--body-fg);
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* В темной теме заголовки */
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+    
+    .field-calculated_price label,
+    .field-price_calculation label {
+        color: #fff !important;
+    }
+}
+
+/* Контейнер для полей расчета */
+.module .aligned .form-row {
+    padding: 10px 0;
+}
+
+/* Улучшаем отступы в админке */
+.form-row.field-price_calculation textarea {
+    margin-top: 5px;
+}
+
+/* Стили для выбора времени */
+.time-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.time-input-wrapper select {
+    min-width: 80px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background-color: var(--body-bg);
+    color: var(--body-fg);
+}
+
+/* Для поля времени в темной теме */
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+    
+    .time-input-wrapper select {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-color: #555;
+    }
+}
+
+/* Стили для подсветки итоговой цены */
+.price-highlight {
+    background-color: #e8f5e8 !important;
+    color: #155724 !important;
+    border-color: #c3e6cb !important;
+}
+
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+    
+    .price-highlight {
+        background-color: #1a472a !important;
+        color: #90ee90 !important;
+        border-color: #2e8b57 !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+// JavaScript для расчета цены (встроенный)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Screening price calculation - embedded version');
+    
+    // Находим элементы
+    const hallSelect = document.getElementById('id_hall');
+    const priceField = document.getElementById('id_price');
+    const calculationField = document.getElementById('id_price_calculation');
+    
+    // Ищем поля даты и времени
+    let dateInput = document.getElementById('id_start_date');
+    let hourSelect = document.getElementById('id_start_time_0');
+    let minuteSelect = document.getElementById('id_start_time_1');
+    
+    // Если нет этих полей, ищем альтернативные
+    if (!dateInput) {
+        dateInput = document.querySelector('input[name="start_time_0"]');
+    }
+    if (!hourSelect) {
+        hourSelect = document.querySelector('select[name="start_time_1"]');
+    }
+    
+    // Функция для получения времени
+    function getTimeValue() {
+        if (hourSelect && minuteSelect) {
+            const hour = hourSelect.value;
+            const minute = minuteSelect.value;
+            if (hour && minute) {
+                return hour + ':' + minute;
+            }
+        } else if (hourSelect) {
+            // Для обычного выпадающего списка Django
+            return hourSelect.value;
+        }
+        return null;
+    }
+    
+    // Функция для расчета цены
+    function calculatePrice() {
+        console.log('Calculating price...');
+        
+        const hallId = hallSelect ? hallSelect.value : null;
+        const dateValue = dateInput ? dateInput.value : null;
+        const timeValue = getTimeValue();
+        
+        if (!hallId || !dateValue || !timeValue) {
+            if (calculationField) {
+                calculationField.value = 'Выберите зал, дату и время сеанса для расчета цены';
+            }
+            if (priceField) {
+                priceField.value = '';
+                priceField.classList.remove('price-highlight');
+            }
+            return;
+        }
+        
+        // Извлекаем час из времени
+        let hour = 12;
+        if (timeValue && timeValue.includes(':')) {
+            hour = parseInt(timeValue.split(':')[0]);
+        } else if (timeValue) {
+            hour = parseInt(timeValue);
+        }
+        
+        // Получаем название зала
+        const hallName = hallSelect.options[hallSelect.selectedIndex].text;
+        
+        // Определяем множитель времени
+        let timeMultiplier = 1.0;
+        let timeDesc = '';
+        
+        if (8 <= hour && hour < 12) {
+            timeMultiplier = 0.7;
+            timeDesc = 'утро (' + hour + ':00)';
+        } else if (12 <= hour && hour < 16) {
+            timeMultiplier = 0.9;
+            timeDesc = 'день (' + hour + ':00)';
+        } else if (16 <= hour && hour < 20) {
+            timeMultiplier = 1.2;
+            timeDesc = 'вечер (' + hour + ':00)';
+        } else {
+            timeMultiplier = 1.4;
+            timeDesc = 'ночь (' + hour + ':00)';
+        }
+        
+        // Определяем тип зала и базовую цену
+        let hallType = 'Стандарт';
+        let basePrice = 350;
+        
+        const hallNameLower = hallName.toLowerCase();
+        if (hallNameLower.includes('vip')) {
+            hallType = 'VIP';
+            basePrice = 1100;
+        } else if (hallNameLower.includes('love')) {
+            hallType = 'Love Hall';
+            basePrice = 900;
+        } else if (hallNameLower.includes('комфорт') || hallNameLower.includes('comfort')) {
+            hallType = 'Комфорт';
+            basePrice = 550;
+        } else if (hallNameLower.includes('imax')) {
+            hallType = 'IMAX';
+            basePrice = 800;
+        }
+        
+        // Рассчитываем итоговую цену
+        const finalPrice = Math.round(basePrice * timeMultiplier);
+        
+        // Формируем текст расчета
+        const calculationText = 
+            '╔══════════════════════════════════════════════╗\n' +
+            '║      📊 РАСЧЕТ СТОИМОСТИ БИЛЕТА             ║\n' +
+            '╚══════════════════════════════════════════════╝\n\n' +
+            '• Зал: "' + hallName + '"\n' +
+            '  └── Тип: ' + hallType + '\n' +
+            '  └── Базовая цена: ' + basePrice + ' руб.\n\n' +
+            '• Время сеанса: ' + timeDesc + '\n' +
+            '  └── Множитель времени: ×' + timeMultiplier + '\n\n' +
+            '══════════════════════════════════════════════\n' +
+            '  ФОРМУЛА: ' + basePrice + ' руб. × ' + timeMultiplier + '\n' +
+            '  ИТОГО: ' + finalPrice + ' руб.\n' +
+            '══════════════════════════════════════════════\n\n' +
+            '📝 Цена будет зафиксирована при сохранении';
+        
+        // Обновляем поля
+        if (calculationField) {
+            calculationField.value = calculationText;
+        }
+        
+        if (priceField) {
+            priceField.value = finalPrice;
+            priceField.classList.add('price-highlight');
+        }
+    }
+    
+    // Добавляем обработчики событий
+    if (hallSelect) hallSelect.addEventListener('change', calculatePrice);
+    if (dateInput) dateInput.addEventListener('change', calculatePrice);
+    if (hourSelect) hourSelect.addEventListener('change', calculatePrice);
+    if (minuteSelect) minuteSelect.addEventListener('change', calculatePrice);
+    
+    // Также отслеживаем ввод вручную
+    if (dateInput && dateInput.type === 'text') {
+        dateInput.addEventListener('input', function() {
+            clearTimeout(window.dateTimeout);
+            window.dateTimeout = setTimeout(calculatePrice, 300);
+        });
+    }
+    
+    // Запускаем расчет при загрузке
+    setTimeout(calculatePrice, 500);
+    
+    console.log('Price calculation initialized');
+});
+</script>
+{% endblock %}

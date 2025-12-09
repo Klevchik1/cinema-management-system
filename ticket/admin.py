@@ -277,11 +277,7 @@ class ScreeningAdmin(LoggingModelAdmin):
             description=f"{'Изменен' if change else 'Создан'} сеанс. Цена: {obj.price} руб. (авторасчет)"
         )
 
-    class Media:
-        css = {
-            'all': ('admin/css/screening_price.css',)
-        }
-        js = ('admin/js/screening_price_calculation.js',)
+    change_form_template = 'admin/ticket/screening/change_form.html'
 
 
 @admin.register(Seat)
