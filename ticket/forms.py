@@ -206,14 +206,15 @@ class MovieForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._warning_messages = []
 
-        # Заполняем выбор существующих жанров
-        genres = Genre.objects.all().values_list('name', 'name')
-        self.fields['genre_choice'].choices = [('', '---------')] + list(genres)
+    def add_warning(self, message):
+        """Добавить предупреждающее сообщение"""
+        self._warning_messages.append(message)
 
-        # Если редактируем существующий фильм, устанавливаем текущий жанр
-        if self.instance and self.instance.pk and self.instance.genre:
-            self.fields['genre_choice'].initial = self.instance.genre.name
+    def get_warnings(self):
+        """Получить все предупреждающие сообщения"""
+        return self._warning_messages
 
     def clean(self):
         cleaned_data = super().clean()
@@ -223,13 +224,22 @@ class MovieForm(forms.ModelForm):
         if not genre_choice and not new_genre:
             raise ValidationError('Выберите жанр или создайте новый')
 
-        if genre_choice == 'new':
-            if not new_genre:
-                raise ValidationError('Введите название нового жанра')
-            # Создаем новый жанр
-            genre, created = Genre.objects.get_or_create(name=new_genre)
-            cleaned_data['genre'] = genre
-        elif genre_choice:
+        if new_genre:  # Если пользователь ввел новый жанр
+            # Приводим к стандартному виду
+            new_genre = ' '.join(new_genre.strip().split()).title()
+
+            # Проверяем, не существует ли уже такого жанра
+            if Genre.objects.filter(name=new_genre).exists():
+                existing_genre = Genre.objects.get(name=new_genre)
+                cleaned_data['genre'] = existing_genre
+                # Можно добавить сообщение пользователю
+                self.add_warning(f'Жанр "{new_genre}" уже существует. Используем существующий.')
+            else:
+                # Создаем новый жанр
+                genre = Genre.objects.create(name=new_genre)
+                cleaned_data['genre'] = genre
+
+        elif genre_choice and genre_choice != 'new':
             # Используем существующий жанр
             try:
                 genre = Genre.objects.get(name=genre_choice)

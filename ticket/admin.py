@@ -13,6 +13,8 @@ from .logging_utils import OperationLogger
 from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog
 from .models import Hall, Movie, Screening, Seat, Ticket, User, Genre
 from .report_utils import ReportGenerator
+from django import forms
+from django.core.exceptions import ValidationError
 
 
 class LoggingModelAdmin(admin.ModelAdmin):
@@ -80,6 +82,30 @@ class HallAdmin(LoggingModelAdmin):
     total_seats.short_description = 'Всего мест'
 
 
+class GenreAdminForm(forms.ModelForm):
+    """Форма для админки с валидацией уникальности жанра"""
+
+    class Meta:
+        model = Genre
+        fields = '__all__'
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if name:
+            # Приводим к стандартному виду
+            name = ' '.join(name.strip().split()).title()
+
+            # Проверяем уникальность
+            queryset = Genre.objects.filter(name=name)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+
+            if queryset.exists():
+                raise ValidationError(f'Жанр "{name}" уже существует')
+
+        return name
+
+
 @admin.register(Genre)
 class GenreAdmin(LoggingModelAdmin):
     """Админ-класс для управления жанрами"""
@@ -87,12 +113,53 @@ class GenreAdmin(LoggingModelAdmin):
     search_fields = ('name',)
     list_per_page = 20
     readonly_fields = ('created_at',)
+    form = GenreAdminForm
 
     def movie_count(self, obj):
         """Количество фильмов в этом жанре"""
         return obj.movie_set.count()
 
     movie_count.short_description = 'Количество фильмов'
+
+    actions = ['merge_duplicate_genres']
+
+    def merge_duplicate_genres(self, request, queryset):
+        """Объединить выбранные жанры в один (первый выбранный)"""
+        if queryset.count() < 2:
+            self.message_user(request, 'Выберите хотя бы 2 жанра для объединения', messages.WARNING)
+            return
+
+        main_genre = queryset.first()
+        other_genres = queryset.exclude(pk=main_genre.pk)
+
+        # Обновляем все фильмы с другими жанрами на основной жанр
+        updated_count = 0
+        for genre in other_genres:
+            movies = genre.movie_set.all()
+            for movie in movies:
+                movie.genre = main_genre
+                movie.save()
+                updated_count += 1
+
+        # Удаляем объединенные жанры
+        deleted_count = other_genres.count()
+        other_genres.delete()
+
+        # Логируем операцию
+        OperationLogger.log_model_operation(
+            request=request,
+            action_type='UPDATE',
+            instance=main_genre,
+            description=f'Объединение жанров: {deleted_count} жанров объединены в "{main_genre.name}", обновлено {updated_count} фильмов'
+        )
+
+        self.message_user(
+            request,
+            f'✅ Объединено {deleted_count} жанров в "{main_genre.name}". Обновлено {updated_count} фильмов.',
+            messages.SUCCESS
+        )
+
+    merge_duplicate_genres.short_description = "🔀 Объединить выбранные жанры"
 
 
 @admin.register(Movie)

@@ -142,6 +142,8 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
     class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
         indexes = [
             models.Index(fields=['email']),
             models.Index(fields=['number']),
@@ -236,6 +238,9 @@ class Hall(models.Model):
         verbose_name = "Зал"
         verbose_name_plural = "Залы"
 
+
+# В models.py, в классе Genre
+
 class Genre(models.Model):
     name = models.CharField(max_length=30, unique=True, verbose_name='Название жанра')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -243,9 +248,26 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        # Приводим имя к стандартному виду: первая буква заглавная, остальные строчные
+        if self.name:
+            # Убираем лишние пробелы
+            self.name = ' '.join(self.name.strip().split())
+            # Делаем первую букву заглавной, остальные строчные
+            self.name = self.name.title()
+
+        # Проверяем уникальность перед сохранением
+        if Genre.objects.filter(name=self.name).exclude(pk=self.pk).exists():
+            raise ValidationError(f'Жанр "{self.name}" уже существует')
+
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
+        indexes = [
+            models.Index(fields=['name']),
+        ]
 
 class Movie(models.Model):
     title = models.CharField(max_length=100)
