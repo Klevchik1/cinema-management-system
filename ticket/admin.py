@@ -239,7 +239,7 @@ class ScreeningAdmin(LoggingModelAdmin):
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('movie', 'hall', 'start_time', 'end_time')
+            'fields': ('movie', 'hall', 'start_date', 'start_time', 'end_time')
         }),
         ('Стоимость билета', {
             'fields': ('price', 'price_calculation'),

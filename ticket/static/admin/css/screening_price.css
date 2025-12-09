@@ -3,24 +3,34 @@
     background-color: var(--body-bg);
     color: var(--body-fg);
     border: 1px solid var(--border-color);
-    padding: 10px;
+    padding: 12px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.4;
     border-radius: 4px;
-    margin-top: 5px;
+    margin-top: 8px;
     white-space: pre;
     width: 100%;
     max-width: 800px;
-    height: 200px;
+    height: 220px;
     resize: vertical;
+    overflow: auto;
 }
 
-/* Для темной темы */
-[data-theme="dark"] #id_price_calculation {
-    background-color: var(--darkened-bg);
-    color: var(--body-fg);
-    border-color: var(--border-color);
+/* Улучшенная стилизация для темной темы */
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+
+    #id_price_calculation {
+        background-color: #1a1a1a !important;
+        color: #e0e0e0 !important;
+        border-color: #444 !important;
+    }
+
+    /* Обеспечиваем контрастность в темной теме */
+    .field-price_calculation .help {
+        color: #aaa !important;
+    }
 }
 
 /* Поле рассчитанной цены */
@@ -32,25 +42,37 @@
     padding: 8px 12px;
     width: 200px;
     font-size: 16px;
+    text-align: center;
 }
 
 /* Для темной темы */
-[data-theme="dark"] #id_calculated_price {
-    background-color: var(--darkened-bg);
-    color: var(--body-fg);
-    border-color: var(--border-color);
-}
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
 
-/* Скрытое поле цены */
-#id_price {
-    display: none !important;
+    #id_calculated_price {
+        background-color: #1a1a1a !important;
+        color: #fff !important;
+        border-color: #555 !important;
+    }
 }
 
 /* Заголовки для секции стоимости */
-fieldset .field-calculated_price label,
-fieldset .field-price_calculation label {
+.field-calculated_price label,
+.field-price_calculation label {
     font-weight: bold;
     color: var(--body-fg);
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* В темной теме заголовки */
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+
+    .field-calculated_price label,
+    .field-price_calculation label {
+        color: #fff !important;
+    }
 }
 
 /* Сообщение при загрузке */
@@ -59,8 +81,51 @@ fieldset .field-price_calculation label {
     font-style: italic;
 }
 
-/* Цена в списке */
-.column-price_display {
+/* Контейнер для полей расчета */
+.module .aligned .form-row {
+    padding: 10px 0;
+}
+
+/* Улучшаем отступы в админке */
+.form-row.field-price_calculation textarea {
+    margin-top: 5px;
+}
+
+/* Специальные стили для поля времени */
+.time-input-wrapper {
+    margin-top: 5px;
+}
+
+.time-input-wrapper select {
+    min-width: 80px;
+    margin-right: 10px;
+}
+
+/* Для поля времени в темной теме */
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+
+    .time-input-wrapper select {
+        background-color: #2a2a2a;
+        color: #fff;
+        border-color: #555;
+    }
+}
+
+/* Скрытое поле цены */
+#id_price {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    color: #212529 !important;
     font-weight: bold;
-    color: var(--body-fg);
+}
+
+@media (prefers-color-scheme: dark),
+       [data-theme="dark"] {
+
+    #id_price {
+        background-color: #2a2a2a !important;
+        border-color: #555 !important;
+        color: #fff !important;
+    }
 }

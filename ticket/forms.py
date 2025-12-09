@@ -14,6 +14,9 @@ from django.utils import timezone
 from decimal import Decimal
 from django import forms
 import datetime
+from .widgets import TimePickerWidget  # Добавить в начале файла
+import datetime
+
 
 
 class RegistrationForm(forms.Form):
@@ -422,38 +425,181 @@ class DateTimeInput(forms.DateTimeInput):
 class ScreeningAdminForm(forms.ModelForm):
     """Кастомная форма для админки Screening с автоматическим расчетом цены"""
 
+    # Добавляем отдельные поля для даты и времени
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'min': datetime.date.today().strftime('%Y-%m-%d'),
+            'class': 'date-input'
+        }),
+        label='Дата сеанса',
+        required=True
+    )
+
+    start_time = forms.CharField(
+        widget=TimePickerWidget(),
+        label='Время сеанса',
+        required=True,
+        help_text='Выберите часы и минуты (доступно с 8:00 до 23:50)'
+    )
+
     price_calculation = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
-            'rows': 8,
+            'rows': 10,
             'cols': 80,
             'readonly': 'readonly',
-            'style': 'font-family: monospace; font-size: 12px; white-space: pre; background-color: #f8f9fa;',
-            'class': 'price-calculation-field'
+            'class': 'price-calculation-field',
+            'style': 'font-family: monospace; font-size: 12px; white-space: pre;'
         }),
         label='Расчет стоимости',
-        help_text='Цена рассчитывается автоматически при выборе зала и времени'
+        help_text='Цена рассчитывается автоматически при выборе зала, даты и времени'
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Если объект уже существует, заполняем поля даты и времени
+        if self.instance.pk and self.instance.start_time:
+            # Приводим к локальному времени
+            local_time = timezone.localtime(self.instance.start_time)
+            self.fields['start_date'].initial = local_time.date()
+            self.fields['start_time'].initial = local_time.strftime('%H:%M')
+
         # Делаем поле price readonly
         self.fields['price'].widget.attrs['readonly'] = True
-        self.fields['price'].widget.attrs['style'] = 'background-color: #f0f0f0;'
+        self.fields['price'].widget.attrs['class'] = 'price-field-readonly'
         self.fields['price'].help_text = 'Рассчитывается автоматически'
 
         # Устанавливаем начальные значения
-        self.fields['price_calculation'].initial = "Выберите зал и время сеанса для расчета цены"
+        self.fields['price_calculation'].initial = "Выберите зал, дату и время сеанса для расчета цены"
 
         # Если объект уже сохранен - показываем расчет
         if self.instance.pk and self.instance.hall and self.instance.start_time:
             calculation_text = self.instance.get_price_calculation_explanation()
             self.fields['price_calculation'].initial = calculation_text
 
+    def clean_start_time(self):
+        """Валидация времени"""
+        time_str = self.cleaned_data.get('start_time')
+        if time_str:
+            try:
+                # Преобразуем строку в объект time
+                hour, minute, _ = time_str.split(':')
+                hour = int(hour)
+                minute = int(minute)
+
+                # Проверяем допустимое время (8:00 - 23:50)
+                if hour < 8 or hour > 23:
+                    raise ValidationError("Время должно быть с 8:00 до 23:50")
+                if hour == 23 and minute > 50:
+                    raise ValidationError("Последний сеанс может начинаться в 23:50")
+
+            except (ValueError, AttributeError):
+                raise ValidationError("Неверный формат времени. Используйте ЧЧ:ММ")
+
+        return time_str
+
+    def clean(self):
+        """Общая валидация формы"""
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        start_time = cleaned_data.get('start_time')
+        movie = cleaned_data.get('movie')
+        hall = cleaned_data.get('hall')
+
+        if start_date and start_time and movie and hall:
+            # Создаем datetime объект
+            try:
+                hour, minute, _ = start_time.split(':')
+                start_datetime = datetime.datetime.combine(
+                    start_date,
+                    datetime.time(int(hour), int(minute))
+                )
+                # Делаем его aware с текущей временной зоной
+                start_datetime = timezone.make_aware(start_datetime)
+
+                # Проверяем что сеанс не в прошлом
+                if start_datetime < timezone.now():
+                    raise ValidationError("Нельзя создавать сеансы в прошлом")
+
+                # Рассчитываем время окончания
+                end_datetime = start_datetime + movie.duration + datetime.timedelta(minutes=10)
+
+                # Исправленная проверка: сеанс должен заканчиваться до 24:00
+                # Преобразуем в локальное время для проверки
+                local_end = timezone.localtime(end_datetime)
+                end_hour = local_end.hour
+                end_minute = local_end.minute
+
+                # Проверяем, что сеанс заканчивается до 24:00
+                if end_hour == 0 and end_minute > 0:
+                    # Если час = 0 (после полуночи), значит сеанс заканчивается после 24:00
+                    raise ValidationError(
+                        f"Сеанс заканчивается в {local_end.strftime('%H:%M')} следующего дня. "
+                        f"Кинотеатр работает до 24:00. Выберите более раннее время начала."
+                    )
+                elif end_hour >= 24:
+                    # На всякий случай проверяем часы >= 24
+                    raise ValidationError(
+                        f"Сеанс заканчивается после 24:00. "
+                        f"Кинотеатр работает до 24:00. Выберите более раннее время начала."
+                    )
+
+                # Проверяем пересечения с другими сеансами
+                overlapping_screenings = Screening.objects.filter(
+                    hall=hall,
+                    start_time__lt=end_datetime,
+                    end_time__gt=start_datetime
+                ).exclude(pk=self.instance.pk if self.instance else None)
+
+                if overlapping_screenings.exists():
+                    overlapping = overlapping_screenings.first()
+                    overlapping_start = timezone.localtime(overlapping.start_time).strftime('%H:%M')
+                    overlapping_end = timezone.localtime(overlapping.end_time).strftime('%H:%M')
+                    raise ValidationError(
+                        f"Сеанс пересекается с другим сеансом:\n"
+                        f"• Фильм: {overlapping.movie.title}\n"
+                        f"• Время: {overlapping_start} - {overlapping_end}\n"
+                        f"Выберите другое время."
+                    )
+
+                # Сохраняем вычисленное время для использования в save()
+                cleaned_data['start_datetime'] = start_datetime
+
+            except Exception as e:
+                if isinstance(e, ValidationError):
+                    raise e
+                raise ValidationError(f"Ошибка при обработке времени: {str(e)}")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        """Сохраняем объект с вычисленным временем"""
+        screening = super().save(commit=False)
+
+        # Устанавливаем время из clean()
+        if 'start_datetime' in self.cleaned_data:
+            screening.start_time = self.cleaned_data['start_datetime']
+
+            # Автоматически рассчитываем время окончания
+            if screening.movie and screening.start_time:
+                # Длительность фильма + 10 минут на уборку
+                screening.end_time = screening.start_time + screening.movie.duration + datetime.timedelta(minutes=10)
+
+        # Автоматически рассчитываем цену, если она не была установлена
+        if not screening.price and screening.hall and screening.start_time:
+            screening.price = screening.calculate_price()
+
+        if commit:
+            screening.save()
+
+        return screening
+
     class Meta:
         model = Screening
         fields = '__all__'
+        exclude = ['start_time']  # Исключаем старое поле, используем наши поля
 
 
 class DailyBackupForm(forms.Form):

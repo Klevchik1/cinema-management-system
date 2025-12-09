@@ -1,37 +1,40 @@
 // JavaScript для расчета цены с раздельными полями даты и времени
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Screening price calculation - final version');
+    console.log('Screening price calculation - improved version with date/time pickers');
 
     // Находим элементы
     var hallSelect = document.getElementById('id_hall');
     var priceField = document.getElementById('id_price');
     var calculationField = document.getElementById('id_price_calculation');
 
-    // Находим поля даты и времени (стандартные Django виджеты)
-    var dateInput = document.getElementById('id_start_time_0');
-    var timeInput = document.getElementById('id_start_time_1');
+    // Находим новые поля даты и времени
+    var dateInput = document.getElementById('id_start_date');
+    var hourSelect = document.getElementById('id_start_time_0');
+    var minuteSelect = document.getElementById('id_start_time_1');
 
     console.log('Elements found:', {
         hallSelect: !!hallSelect,
         dateInput: !!dateInput,
-        timeInput: !!timeInput,
+        hourSelect: !!hourSelect,
+        minuteSelect: !!minuteSelect,
         calculationField: !!calculationField,
         priceField: !!priceField
     });
 
-    // Если нет поля времени с id, ищем по имени
-    if (!timeInput) {
-        timeInput = document.querySelector('select[name="start_time_1"]');
-    }
-
-    // Если нет поля даты с id, ищем по имени
-    if (!dateInput) {
-        dateInput = document.querySelector('input[name="start_time_0"]');
-    }
-
-    if (!hallSelect || !dateInput || !timeInput || !calculationField) {
+    if (!hallSelect || !dateInput || !hourSelect || !minuteSelect || !calculationField) {
         console.error('Required elements not found');
         return;
+    }
+
+    // Функция для получения времени в формате HH:MM
+    function getTimeValue() {
+        var hour = hourSelect.value;
+        var minute = minuteSelect.value;
+
+        if (hour && minute) {
+            return hour + ':' + minute;
+        }
+        return null;
     }
 
     // Функция для расчета цены
@@ -40,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var hallId = hallSelect.value;
         var dateValue = dateInput.value;
-        var timeValue = timeInput.value;
+        var timeValue = getTimeValue();
 
         console.log('Values:', {
             hallId: hallId,
@@ -49,20 +52,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (!hallId || !dateValue || !timeValue) {
-            calculationField.value = 'Выберите зал и время сеанса для расчета цены';
+            calculationField.value = 'Выберите зал, дату и время сеанса для расчета цены';
             if (priceField) priceField.value = '';
             return;
         }
 
         // Определяем час из времени
-        var hour = 12;
-        if (timeValue && timeValue.includes(':')) {
-            hour = parseInt(timeValue.split(':')[0]);
-        } else if (timeValue) {
-            // Для выпадающего списка (формат "19:30:00")
-            hour = parseInt(timeValue);
-        }
-
+        var hour = parseInt(timeValue.split(':')[0]);
         console.log('Hour extracted:', hour);
 
         // Получаем название зала
@@ -113,18 +109,21 @@ document.addEventListener('DOMContentLoaded', function() {
         var finalPrice = Math.round(basePrice * timeMultiplier);
         console.log('Final price:', finalPrice);
 
-        // Формируем текст расчета
+        // Формируем красивый текст расчета
         var calculationText =
-            '📊 РАСЧЕТ СТОИМОСТИ БИЛЕТА:\n' +
-            '──────────────────────────\n' +
-            '• Зал: "' + hallName + '" → тип: ' + hallType + '\n' +
-            '• Базовая цена: ' + basePrice + ' руб.\n' +
+            '╔══════════════════════════════════════════════╗\n' +
+            '║      📊 РАСЧЕТ СТОИМОСТИ БИЛЕТА             ║\n' +
+            '╚══════════════════════════════════════════════╝\n\n' +
+            '• Зал: "' + hallName + '"\n' +
+            '  └── Тип: ' + hallType + '\n' +
+            '  └── Базовая цена: ' + basePrice + ' руб.\n\n' +
             '• Время сеанса: ' + timeDesc + '\n' +
-            '• Множитель времени: ' + timeMultiplier + '\n' +
-            '──────────────────────────\n' +
-            '• ИТОГО: ' + basePrice + ' × ' + timeMultiplier + ' = ' + finalPrice + ' руб.\n' +
-            '──────────────────────────\n' +
-            '*Цена фиксируется при сохранении';
+            '  └── Множитель времени: ×' + timeMultiplier + '\n\n' +
+            '══════════════════════════════════════════════\n' +
+            '  ФОРМУЛА: ' + basePrice + ' руб. × ' + timeMultiplier + '\n' +
+            '  ИТОГО: ' + finalPrice + ' руб.\n' +
+            '══════════════════════════════════════════════\n\n' +
+            '📝 Цена будет зафиксирована при сохранении';
 
         // Обновляем поля
         calculationField.value = calculationText;
@@ -132,6 +131,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (priceField) {
             priceField.value = finalPrice;
             console.log('Price field updated to:', priceField.value);
+
+            // Добавляем CSS класс для визуального выделения
+            priceField.style.backgroundColor = '#e8f5e8';
+            priceField.style.color = '#155724';
+            priceField.style.borderColor = '#c3e6cb';
+            priceField.style.fontWeight = 'bold';
+
+            // Для темной темы
+            if (document.documentElement.getAttribute('data-theme') === 'dark' ||
+                window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                priceField.style.backgroundColor = '#1a472a';
+                priceField.style.color = '#90ee90';
+                priceField.style.borderColor = '#2e8b57';
+            }
         }
 
         console.log('--- Calculation completed ---');
@@ -140,45 +153,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Добавляем обработчики событий
     hallSelect.addEventListener('change', calculatePrice);
     dateInput.addEventListener('change', calculatePrice);
-    timeInput.addEventListener('change', calculatePrice);
-
-    // Также отслеживаем ввод вручную (если поле текстовое)
-    if (dateInput.type === 'text') {
-        dateInput.addEventListener('input', function() {
-            clearTimeout(window.dateTimeout);
-            window.dateTimeout = setTimeout(calculatePrice, 300);
-        });
-    }
-
-    // Для select поля времени
-    if (timeInput.tagName === 'SELECT') {
-        // Уже есть change обработчик
-    } else if (timeInput.type === 'text') {
-        timeInput.addEventListener('input', function() {
-            clearTimeout(window.timeTimeout);
-            window.timeTimeout = setTimeout(calculatePrice, 300);
-        });
-    }
+    hourSelect.addEventListener('change', calculatePrice);
+    minuteSelect.addEventListener('change', calculatePrice);
 
     // Запускаем расчет при загрузке
     setTimeout(calculatePrice, 500);
-
-    // Дополнительно: отслеживаем изменения в календаре (если он открывается)
-    var calendarLinks = document.querySelectorAll('.datetimeshortcuts a');
-    calendarLinks.forEach(function(link) {
-        link.addEventListener('click', function() {
-            setTimeout(calculatePrice, 1000);
-        });
-    });
 
     // Обновляем расчет при фокусе на полях
     dateInput.addEventListener('focus', function() {
         setTimeout(calculatePrice, 100);
     });
 
-    timeInput.addEventListener('focus', function() {
-        setTimeout(calculatePrice, 100);
-    });
-
-    console.log('Event listeners attached');
+    console.log('Event listeners attached for improved time picker');
 });
