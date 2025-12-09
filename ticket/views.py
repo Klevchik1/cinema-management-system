@@ -107,6 +107,17 @@ def register(request):
             return redirect('verify_email')
 
         else:
+            OperationLogger.log_operation(
+                request=request,
+                action_type='OTHER',
+                module_type='AUTH',
+                description=f'Ошибка в форме регистрации для {request.POST.get("email", "unknown")}',
+                additional_data={
+                    'form_errors': form.errors,
+                    'email': request.POST.get('email', '')
+                }
+            )
+
             messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = RegistrationForm()
@@ -289,7 +300,12 @@ def user_login(request):
                     request=request,
                     action_type='OTHER',
                     module_type='AUTH',
-                    description=f'Неудачная попытка входа для email {email}'
+                    description=f'Неудачная попытка входа для email {email}',
+                    additional_data={
+                        'email': email,
+                        'ip_address': request.META.get('REMOTE_ADDR', 'unknown'),
+                        'user_agent': request.META.get('HTTP_USER_AGENT', '')[:100]
+                    }
                 )
                 messages.error(request, 'Неверный email или пароль')
     else:
@@ -1037,7 +1053,9 @@ def profile(request):
                 object_repr=str(request.user),
                 additional_data={
                     'verification_code': verification_code,
-                    'source': 'website'
+                    'source': 'website',
+                    'telegram_username': request.user.telegram_username,
+                    'telegram_chat_id': request.user.telegram_chat_id
                 }
             )
 
@@ -1081,7 +1099,23 @@ def movie_add(request):
     if request.method == 'POST':
         form = MovieForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            movie = form.save()
+
+            # ЛОГИРОВАНИЕ СОЗДАНИЯ ФИЛЬМА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='CREATE',
+                module_type='MOVIES',
+                description=f'Создан новый фильм: {movie.title}',
+                object_id=movie.pk,
+                object_repr=str(movie),
+                additional_data={
+                    'genre': movie.genre.name,
+                    'age_rating': str(movie.age_rating)
+                }
+            )
+
+            messages.success(request, f'Фильм "{movie.title}" успешно добавлен.')
             return redirect('movie_manage')
     else:
         form = MovieForm()
@@ -1094,7 +1128,19 @@ def movie_edit(request, movie_id):
     if request.method == 'POST':
         form = MovieForm(request.POST, request.FILES, instance=movie)
         if form.is_valid():
-            form.save()
+            movie = form.save()
+
+            # ЛОГИРОВАНИЕ ОБНОВЛЕНИЯ ФИЛЬМА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='UPDATE',
+                module_type='MOVIES',
+                description=f'Обновлен фильм: {movie.title}',
+                object_id=movie.pk,
+                object_repr=str(movie)
+            )
+
+            messages.success(request, f'Фильм "{movie.title}" успешно обновлен.')
             return redirect('movie_manage')
     else:
         form = MovieForm(instance=movie)
@@ -1105,7 +1151,18 @@ def movie_edit(request, movie_id):
 def movie_delete(request, movie_id):
     movie = get_object_or_404(Movie, pk=movie_id)
     if request.method == 'POST':
+        # ЛОГИРОВАНИЕ УДАЛЕНИЯ ФИЛЬМА
+        OperationLogger.log_operation(
+            request=request,
+            action_type='DELETE',
+            module_type='MOVIES',
+            description=f'Удален фильм: {movie.title}',
+            object_id=movie.pk,
+            object_repr=str(movie)
+        )
+
         movie.delete()
+        messages.success(request, f'Фильм "{movie.title}" успешно удален.')
         return redirect('movie_manage')
     return render(request, 'ticket/admin/movie_confirm_delete.html', {'movie': movie})
 
@@ -1121,7 +1178,24 @@ def hall_add(request):
     if request.method == 'POST':
         form = HallForm(request.POST)
         if form.is_valid():
-            form.save()
+            hall = form.save()
+
+            # ЛОГИРОВАНИЕ СОЗДАНИЯ ЗАЛА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='CREATE',
+                module_type='HALLS',
+                description=f'Создан новый зал: {hall.name}',
+                object_id=hall.pk,
+                object_repr=str(hall),
+                additional_data={
+                    'rows': hall.rows,
+                    'seats_per_row': hall.seats_per_row,
+                    'total_seats': hall.rows * hall.seats_per_row
+                }
+            )
+
+            messages.success(request, f'Зал "{hall.name}" успешно добавлен.')
             return redirect('hall_manage')
     else:
         form = HallForm()
@@ -1134,7 +1208,19 @@ def hall_edit(request, hall_id):
     if request.method == 'POST':
         form = HallForm(request.POST, instance=hall)
         if form.is_valid():
-            form.save()
+            hall = form.save()
+
+            # ЛОГИРОВАНИЕ ОБНОВЛЕНИЯ ЗАЛА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='UPDATE',
+                module_type='HALLS',
+                description=f'Обновлен зал: {hall.name}',
+                object_id=hall.pk,
+                object_repr=str(hall)
+            )
+
+            messages.success(request, f'Зал "{hall.name}" успешно обновлен.')
             return redirect('hall_manage')
     else:
         form = HallForm(instance=hall)
@@ -1145,7 +1231,18 @@ def hall_edit(request, hall_id):
 def hall_delete(request, hall_id):
     hall = get_object_or_404(Hall, pk=hall_id)
     if request.method == 'POST':
+        # ЛОГИРОВАНИЕ УДАЛЕНИЯ ЗАЛА
+        OperationLogger.log_operation(
+            request=request,
+            action_type='DELETE',
+            module_type='HALLS',
+            description=f'Удален зал: {hall.name}',
+            object_id=hall.pk,
+            object_repr=str(hall)
+        )
+
         hall.delete()
+        messages.success(request, f'Зал "{hall.name}" успешно удален.')
         return redirect('hall_manage')
     return render(request, 'ticket/admin/hall_confirm_delete.html', {'hall': hall})
 
@@ -1164,7 +1261,31 @@ def screening_add(request):
             screening = form.save(commit=False)
             if not screening.end_time and screening.movie and screening.start_time:
                 screening.end_time = screening.start_time + screening.movie.duration + timedelta(minutes=10)
+
+            # Автоматически рассчитываем цену если не задана
+            if not screening.price and screening.hall and screening.start_time:
+                screening.price = screening.calculate_price()
+
             screening.save()
+
+            # ЛОГИРОВАНИЕ СОЗДАНИЯ СЕАНСА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='CREATE',
+                module_type='SCREENINGS',
+                description=f'Создан новый сеанс: {screening.movie.title} в {screening.hall.name}',
+                object_id=screening.pk,
+                object_repr=str(screening),
+                additional_data={
+                    'movie': screening.movie.title,
+                    'hall': screening.hall.name,
+                    'start_time': screening.start_time.strftime('%d.%m.%Y %H:%M'),
+                    'price': str(screening.price),
+                    'calculated_price': screening.price == screening.calculate_price()
+                }
+            )
+
+            messages.success(request, f'Сеанс успешно добавлен.')
             return redirect('screening_manage')
     else:
         form = ScreeningForm()
@@ -1181,7 +1302,32 @@ def screening_edit(request, screening_id):
             if updated_screening.movie and updated_screening.start_time:
                 updated_screening.end_time = updated_screening.start_time + updated_screening.movie.duration + timedelta(
                     minutes=10)
+
+            # Автоматически пересчитываем цену при изменении зала или времени
+            old_hall = screening.hall
+            old_start_time = screening.start_time
+
+            if (updated_screening.hall != old_hall) or (updated_screening.start_time != old_start_time):
+                updated_screening.price = updated_screening.calculate_price()
+
             updated_screening.save()
+
+            # ЛОГИРОВАНИЕ ОБНОВЛЕНИЯ СЕАНСА
+            OperationLogger.log_operation(
+                request=request,
+                action_type='UPDATE',
+                module_type='SCREENINGS',
+                description=f'Обновлен сеанс: {screening.movie.title} в {screening.hall.name}',
+                object_id=screening.pk,
+                object_repr=str(screening),
+                additional_data={
+                    'old_price': str(screening.price),
+                    'new_price': str(updated_screening.price),
+                    'price_recalculated': updated_screening.price != screening.price
+                }
+            )
+
+            messages.success(request, f'Сеанс успешно обновлен.')
             return redirect('screening_manage')
     else:
         form = ScreeningForm(instance=screening)
@@ -1192,7 +1338,18 @@ def screening_edit(request, screening_id):
 def screening_delete(request, screening_id):
     screening = get_object_or_404(Screening, pk=screening_id)
     if request.method == 'POST':
+        # ЛОГИРОВАНИЕ УДАЛЕНИЯ СЕАНСА
+        OperationLogger.log_operation(
+            request=request,
+            action_type='DELETE',
+            module_type='SCREENINGS',
+            description=f'Удален сеанс: {screening.movie.title} в {screening.hall.name}',
+            object_id=screening.pk,
+            object_repr=str(screening)
+        )
+
         screening.delete()
+        messages.success(request, f'Сеанс успешно удален.')
         return redirect('screening_manage')
     return render(request, 'ticket/admin/screening_confirm_delete.html', {'screening': screening})
 

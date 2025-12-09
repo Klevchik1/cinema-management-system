@@ -139,7 +139,25 @@ class User(AbstractUser):
         # Проверяем уникальность email при сохранении
         if self.email and User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
             raise ValidationError('Пользователь с таким email уже существует')
+
+        # Логируем создание/обновление пользователя
+        is_new = self._state.adding
+
         super().save(*args, **kwargs)
+
+        # Логируем после сохранения (когда есть pk)
+        if is_new:
+            try:
+                from .logging_utils import OperationLogger
+                OperationLogger.log_system_operation(
+                    action_type='CREATE',
+                    module_type='USERS',
+                    description=f'Создан новый пользователь: {self.email}',
+                    object_id=self.pk,
+                    object_repr=str(self)
+                )
+            except Exception as e:
+                logger.error(f"Error logging user creation: {e}")
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -550,6 +568,50 @@ class TicketStatus(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем статус при первом сохранении
+        is_new = self._state.adding
+
+        if is_new and not self.status_id:
+            try:
+                active_status = TicketStatus.objects.filter(code='active', is_active=True).first()
+                if active_status:
+                    self.status = active_status
+                else:
+                    # Создаем статус по умолчанию, если его нет
+                    active_status = TicketStatus.objects.create(
+                        code='active',
+                        name='Активный',
+                        description='Билет активен и действителен',
+                        is_active=True,
+                        can_be_refunded=True
+                    )
+                    self.status = active_status
+            except Exception as e:
+                logger.error(f"Error setting default ticket status: {e}")
+
+        super().save(*args, **kwargs)
+
+        # Логируем покупку билета
+        if is_new:
+            try:
+                from .logging_utils import OperationLogger
+                OperationLogger.log_system_operation(
+                    action_type='CREATE',
+                    module_type='TICKETS',
+                    description=f'Куплен билет #{self.id} на фильм: {self.screening.movie.title}',
+                    object_id=self.pk,
+                    object_repr=str(self),
+                    additional_data={
+                        'user_email': self.user.email,
+                        'movie': self.screening.movie.title,
+                        'screening_time': self.screening.start_time.strftime('%d.%m.%Y %H:%M'),
+                        'seat': f"Ряд {self.seat.row}, Место {self.seat.number}"
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error logging ticket purchase: {e}")
+
     class Meta:
         verbose_name = 'Статус билета'
         verbose_name_plural = 'Статусы билетов'
@@ -661,12 +723,31 @@ class Ticket(models.Model):
             self.status = refunded_status
             self.refund_requested_at = timezone.now()
             self.refund_processed_at = timezone.now()  # сразу обработан
-            self.save()
 
-            # Логируем автоматический возврат
-            import logging
-            logger = logging.getLogger(__name__)
+            is_new = self._state.adding
+            super().save()  # Сохраняем через super(), чтобы избежать рекурсии
+
+            # Логируем возврат
             logger.info(f"Автоматический возврат билета #{self.id}, фильм: {self.screening.movie.title}")
+
+            # Логируем операцию возврата
+            try:
+                from .logging_utils import OperationLogger
+                OperationLogger.log_system_operation(
+                    action_type='UPDATE',
+                    module_type='TICKETS',
+                    description=f'Билет #{self.id} возвращен (автоматически)',
+                    object_id=self.pk,
+                    object_repr=str(self),
+                    additional_data={
+                        'movie': self.screening.movie.title,
+                        'user': self.user.email,
+                        'refund_amount': str(self.screening.price),
+                        'reason': 'Автоматический возврат по запросу пользователя'
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error logging refund: {e}")
 
             return True, '✅ Билет успешно возвращен! Полная стоимость будет возвращена.'
 

@@ -86,10 +86,34 @@ class OperationLogger:
 
         object_repr = str(instance)
 
+        # Определяем тип модуля
+        module_type = instance._meta.model_name.upper()
+
+        # Специальная обработка для некоторых моделей
+        module_map = {
+            'SCREENING': 'SCREENINGS',
+            'TICKET': 'TICKETS',
+            'MOVIE': 'MOVIES',
+            'USER': 'USERS',
+            'HALL': 'HALLS',
+            'GENRE': 'MOVIES',
+            'AGERATING': 'MOVIES',
+            'SEAT': 'HALLS',
+            'TICKETSTATUS': 'TICKETS',
+            'BACKUPMANAGER': 'BACKUPS',
+            'OPERATIONLOG': 'SYSTEM',
+            'PENDINGREGISTRATION': 'AUTH',
+            'PASSWORDRESETREQUEST': 'AUTH',
+            'EMAILCHANGEREQUEST': 'AUTH',
+            'REPORT': 'REPORTS'
+        }
+
+        module_type = module_map.get(module_type, 'SYSTEM')
+
         return OperationLogger.log_operation(
             request=request,
             action_type=action_type,
-            module_type=instance._meta.model_name.upper(),
+            module_type=module_type,
             description=description,
             object_id=instance.pk,
             object_repr=object_repr,
@@ -139,7 +163,8 @@ class OperationLogger:
                 description=description,
                 object_id=object_id,
                 object_repr=object_repr,
-                additional_data=additional_data
+                additional_data=additional_data,
+                timestamp=timezone.now()
             )
             logger.info(f"System operation logged: {action_type} - {module_type} - {description}")
         except Exception as e:
