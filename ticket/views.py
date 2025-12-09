@@ -20,7 +20,7 @@ from .email_utils import send_verification_email
 from .forms import MovieForm, HallForm, ScreeningForm
 from .forms import PasswordResetForm, EmailChangeForm
 from .forms import RegistrationForm, LoginForm, UserUpdateForm, CustomPasswordChangeForm
-from .models import PasswordResetRequest
+from .models import PasswordResetRequest, AgeRating
 from .models import PendingRegistration
 from .models import Screening, Ticket, Seat, Movie, Hall, User
 from .utils import generate_enhanced_ticket_pdf, generate_ticket_pdf
@@ -299,6 +299,7 @@ def home(request):
     search_query = request.GET.get('search', '')
     hall_filter = request.GET.get('hall', '')
     genre_filter = request.GET.get('genre', '')
+    age_rating_filter = request.GET.get('age_rating', '')  # Новый фильтр
     selected_date = request.GET.get('date', today.isoformat())
 
     # Преобразуем выбранную дату
@@ -319,7 +320,7 @@ def home(request):
         })
 
     # Получаем все фильмы
-    movies = Movie.objects.prefetch_related('screening_set__hall').all()
+    movies = Movie.objects.prefetch_related('screening_set__hall').select_related('genre', 'age_rating').all()
 
     # Применяем текстовые фильтры
     if search_query:
@@ -330,6 +331,9 @@ def home(request):
 
     if genre_filter:
         movies = movies.filter(genre__name=genre_filter)
+
+    if age_rating_filter:  # Новый фильтр
+        movies = movies.filter(age_rating__name=age_rating_filter)
 
     # Собираем данные для каждого фильма
     movies_data = []
@@ -379,10 +383,14 @@ def home(request):
         flat=True
     ).distinct().order_by('genre__name')
 
+    # Получаем возрастные рейтинги
+    age_ratings = AgeRating.objects.all().order_by('name')
+
     return render(request, 'ticket/home.html', {
         'movies': sorted_movies_data,
         'halls': Hall.objects.all(),
         'genres': genres,
+        'age_ratings': age_ratings,
         'date_filters': date_filters,
         'selected_date': selected_date,
         'today': today,
@@ -390,6 +398,7 @@ def home(request):
             'search': search_query,
             'hall': hall_filter,
             'genre': genre_filter,
+            'age_rating': age_rating_filter,
             'date': selected_date.isoformat()
         }
     })
@@ -1130,7 +1139,7 @@ def screening_delete(request, screening_id):
 
 
 def movie_detail(request, movie_id):
-    movie = get_object_or_404(Movie, pk=movie_id)
+    movie = get_object_or_404(Movie.objects.select_related('genre', 'age_rating'), pk=movie_id)
     local_now = timezone.localtime(timezone.now())
 
     # Предстоящие сеансы

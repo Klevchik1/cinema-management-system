@@ -573,6 +573,22 @@
                             </select>
                         </div>
 
+                        <!-- Фильтр по возрастному рейтингу -->
+                        <div class="form-group">
+                            <label for="age_rating">Возрастной рейтинг</label>
+                            <select name="age_rating" id="age_rating" class="form-control">
+                                <option value="">Все рейтинги</option>
+                                {% for rating in age_ratings %}
+                                    <option
+                                        value="{{ rating.name }}"
+                                        {% if current_filters.age_rating == rating.name %}selected{% endif %}
+                                    >
+                                        {{ rating.name }} - {{ rating.description }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <!-- КНОПКИ ПРИМЕНИТЬ И СБРОСИТЬ -->
                         <div class="filter-buttons">
                             <button type="button" class="btn-apply" onclick="applyFilters()">Применить</button>
@@ -604,6 +620,7 @@
                             <h2>{{ movie_data.movie.title }}</h2>
                             <div class="movie-meta">
                                 <span><strong>Жанр:</strong> {{ movie_data.movie.genre }}</span>
+                                <span><strong>Возраст:</strong> {{ movie_data.movie.age_rating.name }}</span>
                                 <span><strong>Длительность:</strong> {{ movie_data.movie.duration }}</span>
                                 {% if movie_data.has_screenings_today %}
                                     <span class="screening-counter">{{ movie_data.screening_count }} сеанс{{ movie_data.screening_count|ru_pluralize:" ,а,ов" }}</span>
@@ -663,6 +680,7 @@
             const searchValue = document.getElementById('search').value;
             const hallValue = document.getElementById('hall').value;
             const genreValue = document.getElementById('genre').value;
+            const ageRatingValue = document.getElementById('age_rating').value; // Новое
 
             // Устанавливаем выбранную дату
             document.getElementById('selected-date').value = date;
@@ -671,7 +689,7 @@
             let form = document.getElementById('filter-form');
 
             // Удаляем старые скрытые поля если есть
-            const oldHiddenFields = form.querySelectorAll('input[type="hidden"][name="search"], input[type="hidden"][name="hall"], input[type="hidden"][name="genre"]');
+            const oldHiddenFields = form.querySelectorAll('input[type="hidden"][name="search"], input[type="hidden"][name="hall"], input[type="hidden"][name="genre"], input[type="hidden"][name="age_rating"]');
             oldHiddenFields.forEach(field => field.remove());
 
             // Добавляем скрытые поля с текущими значениями фильтров
@@ -699,9 +717,18 @@
                 form.appendChild(hiddenGenre);
             }
 
+            if (ageRatingValue) { // Новое
+                let hiddenAgeRating = document.createElement('input');
+                hiddenAgeRating.type = 'hidden';
+                hiddenAgeRating.name = 'age_rating';
+                hiddenAgeRating.value = ageRatingValue;
+                form.appendChild(hiddenAgeRating);
+            }
+
             // Отправляем форму
             form.submit();
         }
+
 
         // Функция для применения фильтров с сохранением даты
         function applyFilters() {

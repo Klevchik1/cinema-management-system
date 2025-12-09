@@ -9,7 +9,7 @@ from django.conf import settings
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
-from ticket.models import Hall, Movie, Screening, Seat, User, Genre
+from ticket.models import Hall, Movie, Screening, Seat, User, Genre, AgeRating
 
 fake = Faker('ru_RU')
 
@@ -21,8 +21,9 @@ class Command(BaseCommand):
         self.clear_old_data()
         self.create_admin()
         genres = self.create_genres()  # создаем жанры первыми
+        age_ratings = self.create_age_ratings()  # создаем возрастные рейтинги
         halls = self.create_halls()
-        movies = self.create_movies(genres)  # передаем словарь жанров
+        movies = self.create_movies(genres, age_ratings)  # передаем словари жанров и рейтингов
         self.create_screenings(halls, movies)
 
         self.stdout.write(self.style.SUCCESS('✅ База успешно заполнена тестовыми данными!'))
@@ -32,8 +33,9 @@ class Command(BaseCommand):
         Screening.objects.all().delete()
         Seat.objects.all().delete()
         Movie.objects.all().delete()
+        AgeRating.objects.all().delete()
         Hall.objects.all().delete()
-        Genre.objects.all().delete()  # НЕ удаляем жанры, они постоянные
+        Genre.objects.all().delete()
 
     def create_admin(self):
         """Создание администратора если его нет"""
@@ -48,6 +50,43 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'Создан администратор: {admin.email}'))
         else:
             self.stdout.write(self.style.SUCCESS('Администратор уже существует'))
+
+    def create_age_ratings(self):
+        """Создание возрастных рейтингов"""
+        age_ratings_data = [
+            {
+                'name': '0+',
+                'description': 'Фильм разрешен для всех возрастов'
+            },
+            {
+                'name': '6+',
+                'description': 'Фильм разрешен для детей старше 6 лет'
+            },
+            {
+                'name': '12+',
+                'description': 'Фильм разрешен для детей старше 12 лет'
+            },
+            {
+                'name': '16+',
+                'description': 'Фильм разрешен для детей старше 16 лет'
+            },
+            {
+                'name': '18+',
+                'description': 'Фильм запрещен для детей младше 18 лет'
+            },
+        ]
+
+        created_age_ratings = {}
+        for rating_data in age_ratings_data:
+            rating, created = AgeRating.objects.get_or_create(
+                name=rating_data['name'],
+                defaults={'description': rating_data['description']}
+            )
+            created_age_ratings[rating_data['name']] = rating
+            if created:
+                self.stdout.write(self.style.SUCCESS(f'Создан возрастной рейтинг: {rating.name}'))
+
+        return created_age_ratings
 
     def create_halls(self):
         """Создание 5 залов разных типов с описаниями"""
@@ -98,7 +137,7 @@ class Command(BaseCommand):
         return halls
 
     def create_genres(self):
-        """Создание основных жанров"""
+        """Создание основных жанров с уникальными именами"""
         genres = [
             'Фантастика', 'Комедия', 'Боевик', 'Драма', 'Приключения',
             'Биография', 'Мультфильм', 'Ужасы', 'Триллер', 'Мелодрама'
@@ -106,22 +145,28 @@ class Command(BaseCommand):
 
         created_genres = {}
         for genre_name in genres:
+            # Приводим название к стандартному виду (первая заглавная)
+            genre_name = genre_name.strip().title()
             genre, created = Genre.objects.get_or_create(name=genre_name)
             created_genres[genre_name] = genre
             if created:
                 self.stdout.write(self.style.SUCCESS(f'Создан жанр: {genre_name}'))
+            else:
+                self.stdout.write(self.style.WARNING(f'Жанр уже существует: {genre_name}'))
 
         return created_genres
 
-    def create_movies(self, genres):
-        """Создание 12 фильмов с реальными описаниями"""
+    def create_movies(self, genres, age_ratings):
+        """Создание 12 фильмов с реальными описаниями и возрастными рейтингами"""
         posters_dir = os.path.join(settings.BASE_DIR, 'ticket', 'management', 'commands', 'posters')
 
+        # Сопоставление фильмов с возрастными рейтингами
         movies_data = [
             {
                 'title': 'Аватар: Путь воды',
                 'duration': 192,
                 'genre': 'Фантастика',
+                'age_rating': '12+',
                 'poster': 'avatar.jpg',
                 'short_description': 'Джейк Салли и Нейтири создали семью, но им вновь угрожают люди с Земли.',
                 'description': 'Прошло более десяти лет после событий первого фильма "Аватар". Джейк Салли и Нейтири создали семью и делают всё возможное, чтобы оставаться вместе. Однако им вновь угрожает опасность с Земли. Когда древние метки снова появляются, Джейк должен вести войну против людей. В поисках убежища семья Салли отправляется в регионы Пандоры, населённые другими кланами На\'ви. Живя среди нового племени, они учатся жить и выживать в водной среде, одновременно готовясь к неизбежной битве, которая определит будущее Пандоры.'
@@ -130,6 +175,7 @@ class Command(BaseCommand):
                 'title': 'Один дома',
                 'duration': 103,
                 'genre': 'Комедия',
+                'age_rating': '6+',
                 'poster': 'home_alone.jpg',
                 'short_description': '8-летний Кевин случайно остается один дома и защищает свой дом от грабителей.',
                 'description': 'Семья Маккаллистеров в спешке собирается в рождественское путешествие в Париж. В суматохе они забывают дома своего восьмилетнего сына Кевина. Поначалу мальчик рад возможности пожить самостоятельно: он ест сладости, смотрит запрещённые фильмы и устраивает беспорядок. Но вскоре он обнаруживает, что его дом стал мишенью для двух незадачливых грабителей — Гарри и Марва. Используя всю свою смекалку, Кевин превращает дом в крепость с хитроумными ловушками, чтобы дать отпор непрошеным гостям в канун Рождества.'
@@ -138,6 +184,7 @@ class Command(BaseCommand):
                 'title': 'Интерстеллар',
                 'duration': 169,
                 'genre': 'Фантастика',
+                'age_rating': '12+',
                 'poster': 'interstellar.jpg',
                 'short_description': 'Команда исследователей совершает путешествие через червоточину в поисках нового дома для человечества.',
                 'description': 'В недалёком будущем из-за глобального потепления и пыльных бурь человечество переживает продовольственный кризис. Бывший пилот НАСА Купер ведёт фермерское хозяйство вместе со своей семьёй в американской глубинке. Когда его дочь Мёрф утверждает, что в её комнате живёт призрак, Купер понимает, что аномалии гравитации — это послание от пришельцев, которые дают человечеству шанс на спасение. Он присоединяется к секретной экспедиции НАСА, целью которой является поиск нового дома для человечества за пределами Солнечной системы через червоточину.'
@@ -146,6 +193,7 @@ class Command(BaseCommand):
                 'title': 'Оппенгеймер',
                 'duration': 180,
                 'genre': 'Биография',
+                'age_rating': '16+',
                 'poster': 'oppenheimer.jpg',
                 'short_description': 'История жизни американского физика Роберта Оппенгеймера, создателя атомной бомбы.',
                 'description': 'Фильм рассказывает о жизни американского физика-теоретика Роберта Оппенгеймера, который во время Второй мировой войны руководил Манхэттенским проектом — программой по созданию атомной бомбы. Картина охватывает разные периоды его жизни: учёбу в Европе, работу в Калифорнийском университете в Беркли, руководство Лос-Аламосской лабораторией и последующие слушания по допуску к секретной информации в 1954 году. Фильм исследует моральные дилеммы, с которыми столкнулся учёный, создавая оружие массового уничтожения.'
@@ -154,6 +202,7 @@ class Command(BaseCommand):
                 'title': 'Барби',
                 'duration': 114,
                 'genre': 'Комедия',
+                'age_rating': '12+',
                 'poster': 'barbie.jpg',
                 'short_description': 'Кукла Барби живет в идеальном мире, но обнаруживает, что её мир не так прекрасен.',
                 'description': 'Кукла Барби живёт в идеальном мире Барбиленда, где каждый день — самый лучший. Однако однажды она начинает замечать странные изменения: её утренний тост подгорает, а во время вечеринки у бассейна она внезапно задумывается о смерти. Чтобы исправить ситуацию, она отправляется в реальный мир вместе с Кеном. В ходе путешествия они сталкиваются с радостями и трудностями жизни среди людей, узнают ценность настоящей дружбы и самопознания, а также понимают, что совершенство — это не всегда то, к чему нужно стремиться.'
@@ -162,6 +211,7 @@ class Command(BaseCommand):
                 'title': 'Джон Уик 4',
                 'duration': 169,
                 'genre': 'Боевик',
+                'age_rating': '18+',
                 'poster': 'john_wick.jpg',
                 'short_description': 'Джон Уик обнаруживает путь к победе над Правлением Кланов.',
                 'description': 'Джон Уик продолжает свой путь к свободе, сталкиваясь с новыми врагами и могущественными альянсами. На этот раз ему предстоит сразиться с Правлением Кланов, которое сосредоточило против него все свои силы. Чтобы победить, Уик должен найти способ уничтожить организацию изнутри. Его ждут эпические сражения в Париже, Берлине, Нью-Йорке и Осаке, где он столкнётся с самыми опасными противниками в своей жизни.'
@@ -170,6 +220,7 @@ class Command(BaseCommand):
                 'title': 'Стражи Галактики 3',
                 'duration': 150,
                 'genre': 'Фантастика',
+                'age_rating': '16+',
                 'poster': 'guardians.jpg',
                 'short_description': 'Питер Квилл все еще оплачивает потерю Гаморы и должен сплотить свою команду.',
                 'description': 'Питер Квилл всё ещё оплакивает потерю Гаморы и должен сплотить свою команду, чтобы защитить Вселенную и защитить одного из своих. В этой заключительной главе Стражи Галактики отправляются в опасное путешествие, чтобы раскрыть тайны происхождения Ракеты. По пути они сталкиваются с новыми и старыми врагами, которые угрожают уничтожить их и всю галактику. Команде предстоит пройти через самые трудные испытания, чтобы остаться вместе.'
@@ -178,6 +229,7 @@ class Command(BaseCommand):
                 'title': 'Человек-паук: Паутина вселенных',
                 'duration': 140,
                 'genre': 'Мультфильм',
+                'age_rating': '6+',
                 'poster': 'spiderman.jpg',
                 'short_description': 'Майлз Моралес переносится через Мультивселенную и встречает команду Людей-пауков.',
                 'description': 'Майлз Моралес возвращается в следующей главе оскароносной саги "Человек-паук: Через вселенные". Во время путешествия по Мультивселенной он встречает команду Людей-пауков, которые должны защитить само её существование. Когда герои сталкиваются с новым врагом, Майлзу приходится переосмыслить всё, что значит быть героем, чтобы спасти близких из разных измерений. Фильм исследует идею о том, что любой человек может надеть маску и стать героем.'
@@ -186,6 +238,7 @@ class Command(BaseCommand):
                 'title': 'Миссия невыполнима 7',
                 'duration': 163,
                 'genre': 'Боевик',
+                'age_rating': '12+',
                 'poster': 'mission_impossible.jpg',
                 'short_description': 'Итан Хант и его команда МВФ должны отследить новое ужасающее оружие.',
                 'description': 'Итан Хант и его команда МВФ должны отследить новое ужасающее оружие, которое угрожает всему человечеству, если оно окажется в неправильных руках. С контролем над будущим и судьбой мира в своих руках, и с темными силами из прошлого Итана, начинается смертельная гонка по всему миру. Столкнувшись с загадочным и всемогущим противником, Итан вынужден считать, что ничто не имеет значения больше, чем его миссия — даже жизни тех, кто ему дорог.'
@@ -194,6 +247,7 @@ class Command(BaseCommand):
                 'title': 'Индиана Джонс и реликвия судьбы',
                 'duration': 154,
                 'genre': 'Приключения',
+                'age_rating': '12+',
                 'poster': 'indiana_jones.jpg',
                 'short_description': 'Археолог Индиана Джонс отправляется в новое опасное приключение.',
                 'description': 'Археолог Индиана Джонс отправляется в новое опасное приключение, чтобы найти древнюю реликвию, обладающую невероятной силой. Действие фильма происходит в 1969 году, на фоне космической гонки. Джонс понимает, что его давно потерянный племянник работает на злодейскую организацию, которая надеется использовать артефакт для изменения хода истории. Чтобы сорвать их планы, Индиана должен объединиться со своей крестницей и отправиться в путешествие, которое приведёт его в самые отдалённые уголки мира.'
@@ -202,6 +256,7 @@ class Command(BaseCommand):
                 'title': 'Дюна',
                 'duration': 155,
                 'genre': 'Фантастика',
+                'age_rating': '12+',
                 'poster': 'dune.jpg',
                 'short_description': 'Пол Атрейдес вместе с семьей отправляется на опасную планету Арракис.',
                 'description': 'Пол Атрейдес вместе с семьёй отправляется на опасную планету Арракис, где сталкивается с врагами и начинает путь к своей судьбе. На этой пустынной планете находится самый ценный ресурс во вселенной — пряность, которая продлевает жизнь и делает возможными межзвёздные путешествия. Когда его семья попадает в ловушку зловещего заговора, Пол должен отправиться в самое сердце Арракиса, чтобы встретиться с фрименами и исполнить древнее пророчество, которое изменит судьбу галактики.'
@@ -210,6 +265,7 @@ class Command(BaseCommand):
                 'title': 'Трансформеры: Эпоха зверей',
                 'duration': 127,
                 'genre': 'Фантастика',
+                'age_rating': '12+',
                 'poster': 'transformers.jpg',
                 'short_description': 'Автоботы и Максималы объединяются с человечеством против террористических Предаконов.',
                 'description': 'Автоботы и Максималы объединяются с человечеством против террористических Предаконов в битве за Землю. Действие фильма происходит в 1994 году, когда гигантские роботы скрываются среди людей. Когда новая угроза emerges из космоса, Автоботы должны объединиться с племенем Максималов, чтобы защитить планету от уничтожения. В этой эпической битве решается судьба не только Земли, но и всей галактики.'
@@ -218,32 +274,58 @@ class Command(BaseCommand):
 
         movies = []
         for data in movies_data:
-            # Получаем объект Genre из словаря
-            if genres and data['genre'] in genres:
-                genre_obj = genres[data['genre']]
+            # Получаем объект Genre из словаря (приводим к правильному виду)
+            genre_name = data['genre'].strip().title()
+            if genres and genre_name in genres:
+                genre_obj = genres[genre_name]
             else:
                 # Если жанра нет в словаре, создаем его
-                genre_obj, created = Genre.objects.get_or_create(name=data['genre'])
+                genre_obj, created = Genre.objects.get_or_create(name=genre_name)
                 if created:
-                    self.stdout.write(self.style.SUCCESS(f'Создан жанр: {data["genre"]}'))
+                    self.stdout.write(self.style.SUCCESS(f'Создан жанр: {genre_name}'))
 
+            # Получаем объект AgeRating из словаря
+            age_rating_name = data['age_rating']
+            if age_ratings and age_rating_name in age_ratings:
+                age_rating_obj = age_ratings[age_rating_name]
+            else:
+                # Если рейтинга нет в словаре, создаем его
+                default_description = {
+                    '0+': 'Фильм разрешен для всех возрастов',
+                    '6+': 'Фильм разрешен для детей старше 6 лет',
+                    '12+': 'Фильм разрешен для детей старше 12 лет',
+                    '16+': 'Фильм разрешен для детей старше 16 лет',
+                    '18+': 'Фильм запрещен для детей младше 18 лет',
+                }.get(age_rating_name, 'Описание отсутствует')
+
+                age_rating_obj, created = AgeRating.objects.get_or_create(
+                    name=age_rating_name,
+                    defaults={'description': default_description}
+                )
+                if created:
+                    self.stdout.write(self.style.SUCCESS(f'Создан возрастной рейтинг: {age_rating_name}'))
+
+            # Создаем фильм
             movie = Movie.objects.create(
                 title=data['title'],
                 short_description=data['short_description'],
                 description=data['description'],
                 duration=timedelta(minutes=data['duration']),
-                genre=genre_obj  # передаем объект Genre
+                genre=genre_obj,  # передаем объект Genre
+                age_rating=age_rating_obj  # передаем объект AgeRating
             )
 
+            # Добавляем постер если он существует
             poster_path = os.path.join(posters_dir, data['poster'])
             if os.path.exists(poster_path):
                 with open(poster_path, 'rb') as f:
                     movie.poster.save(data['poster'], File(f))
                     movie.save()
-                self.stdout.write(self.style.SUCCESS(f'Создан фильм: {movie.title} (с постером)'))
+                self.stdout.write(self.style.SUCCESS(f'Создан фильм: {movie.title} ({age_rating_name}, с постером)'))
             else:
                 self.stdout.write(
-                    self.style.WARNING(f'Создан фильм: {movie.title} (постер не найден: {data["poster"]})'))
+                    self.style.WARNING(
+                        f'Создан фильм: {movie.title} ({age_rating_name}, постер не найден: {data["poster"]})'))
 
             movies.append(movie)
 

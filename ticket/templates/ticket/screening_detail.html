@@ -92,6 +92,48 @@
             transform: translateY(-2px);
             box-shadow: 0 3px 10px rgba(74, 0, 224, 0.4);
         }
+
+        .screening-info-section {
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .screening-movie-info {
+            background: rgba(40, 40, 40, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ffcc00;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: rgba(20, 20, 20, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .age-rating-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9900 0%, #cc6600 100%);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -115,6 +157,8 @@
             {% endif %}
         </div>
     </div>
+
+
 
         <div class="container">
             <a href="{% url 'movie_detail' screening.movie.id %}" class="btn-back">← Вернуться ко всем сеансам</a>
@@ -233,6 +277,45 @@
             });
             </script>
             {% endif %}
+
+            <div class="screening-info-section">
+                <h2 style="color: #ffcc00; margin-bottom: 20px; text-align: center;">
+                    Детали сеанса
+                </h2>
+
+                <div class="screening-movie-info">
+                    <h3 style="color: #ffcc00; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        {{ screening.movie.title }}
+                        <span class="age-rating-badge">{{ screening.movie.age_rating.name }}</span>
+                    </h3>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong style="color: #aaa;">Жанр:</strong><br>
+                            <span style="color: white;">{{ screening.movie.genre }}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong style="color: #aaa;">Возрастное ограничение:</strong><br>
+                            <span style="color: white;">{{ screening.movie.age_rating.name }} - {{ screening.movie.age_rating.description|truncatechars:60 }}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong style="color: #aaa;">Длительность:</strong><br>
+                            <span style="color: white;">{{ screening.movie.duration }}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong style="color: #aaa;">Начало сеанса:</strong><br>
+                            <span style="color: white;">{{ screening.start_time|date:"d F Y H:i" }}</span>
+                        </div>
+                    </div>
+
+                    {% if screening.movie.short_description %}
+                    <div style="margin-top: 15px; padding: 15px; background: rgba(20, 20, 20, 0.6); border-radius: 6px;">
+                        <strong style="color: #aaa;">Краткое описание:</strong><br>
+                        <span style="color: #ccc;">{{ screening.movie.short_description }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
             <!-- Включаем частичное представление сеанса (ТОЛЬКО ОДИН РАЗ) -->
             {% include 'ticket/screening_partial.html' with screening=screening %}

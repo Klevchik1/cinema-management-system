@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from .export_utils import LogExporter
-from .models import User, Movie, Hall, Screening, OperationLog, Genre
+from .models import User, Movie, Hall, Screening, OperationLog, Genre, AgeRating
 
 
 class RegistrationForm(forms.Form):
@@ -188,9 +188,16 @@ class MovieForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
+    # Добавляем поле для возрастного рейтинга
+    age_rating = forms.ModelChoiceField(
+        queryset=AgeRating.objects.all(),
+        label='Возрастной рейтинг',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = Movie
-        fields = ['title', 'short_description', 'description', 'duration', 'poster']
+        fields = ['title', 'short_description', 'description', 'duration', 'poster', 'age_rating']
         widgets = {
             'short_description': forms.Textarea(attrs={
                 'rows': 3,
@@ -206,40 +213,35 @@ class MovieForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._warning_messages = []
 
-    def add_warning(self, message):
-        """Добавить предупреждающее сообщение"""
-        self._warning_messages.append(message)
+        # Заполняем выбор существующих жанров
+        genres = Genre.objects.all().values_list('name', 'name')
+        self.fields['genre_choice'].choices = [('', '---------')] + list(genres)
 
-    def get_warnings(self):
-        """Получить все предупреждающие сообщения"""
-        return self._warning_messages
+        # Если редактируем существующий фильм, устанавливаем текущий жанр
+        if self.instance and self.instance.pk and self.instance.genre:
+            self.fields['genre_choice'].initial = self.instance.genre.name
+
+        # Устанавливаем начальное значение для возрастного рейтинга
+        if self.instance and self.instance.pk and self.instance.age_rating:
+            self.fields['age_rating'].initial = self.instance.age_rating
 
     def clean(self):
         cleaned_data = super().clean()
         genre_choice = cleaned_data.get('genre_choice')
         new_genre = cleaned_data.get('new_genre')
+        age_rating = cleaned_data.get('age_rating')
 
         if not genre_choice and not new_genre:
             raise ValidationError('Выберите жанр или создайте новый')
 
-        if new_genre:  # Если пользователь ввел новый жанр
-            # Приводим к стандартному виду
-            new_genre = ' '.join(new_genre.strip().split()).title()
-
-            # Проверяем, не существует ли уже такого жанра
-            if Genre.objects.filter(name=new_genre).exists():
-                existing_genre = Genre.objects.get(name=new_genre)
-                cleaned_data['genre'] = existing_genre
-                # Можно добавить сообщение пользователю
-                self.add_warning(f'Жанр "{new_genre}" уже существует. Используем существующий.')
-            else:
-                # Создаем новый жанр
-                genre = Genre.objects.create(name=new_genre)
-                cleaned_data['genre'] = genre
-
-        elif genre_choice and genre_choice != 'new':
+        if genre_choice == 'new':
+            if not new_genre:
+                raise ValidationError('Введите название нового жанра')
+            # Создаем новый жанр
+            genre, created = Genre.objects.get_or_create(name=new_genre)
+            cleaned_data['genre'] = genre
+        elif genre_choice:
             # Используем существующий жанр
             try:
                 genre = Genre.objects.get(name=genre_choice)
@@ -247,7 +249,18 @@ class MovieForm(forms.ModelForm):
             except Genre.DoesNotExist:
                 raise ValidationError('Выбранный жанр не существует')
 
+        # Проверяем наличие возрастного рейтинга
+        if not age_rating:
+            raise ValidationError('Выберите возрастной рейтинг')
+
         return cleaned_data
+
+    def save(self, commit=True):
+        movie = super().save(commit=False)
+        movie.genre = self.cleaned_data['genre']
+        if commit:
+            movie.save()
+        return movie
 
     def save(self, commit=True):
         movie = super().save(commit=False)

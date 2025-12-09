@@ -239,8 +239,6 @@ class Hall(models.Model):
         verbose_name_plural = "Залы"
 
 
-# В models.py, в классе Genre
-
 class Genre(models.Model):
     name = models.CharField(max_length=30, unique=True, verbose_name='Название жанра')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -269,8 +267,35 @@ class Genre(models.Model):
             models.Index(fields=['name']),
         ]
 
+
+class AgeRating(models.Model):
+    """Модель для возрастных рейтингов (соответствует 3NF)"""
+    name = models.CharField(
+        max_length=10,
+        unique=True,
+        verbose_name='Возрастной рейтинг',
+        help_text='Например: 0+, 6+, 12+, 16+, 18+'
+    )
+    description = models.TextField(
+        max_length=100,
+        verbose_name='Описание ограничения',
+        blank=True,
+        null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Возрастной рейтинг'
+        verbose_name_plural = 'Возрастные рейтинги'
+        ordering = ['name']
+
+
 class Movie(models.Model):
-    title = models.CharField(max_length=100)
+    title = models.CharField(max_length=100, verbose_name='Название')
     short_description = models.CharField(
         max_length=200,
         blank=True,
@@ -281,11 +306,17 @@ class Movie(models.Model):
         max_length=1000,
         verbose_name='Полное описание'
     )
-    duration = models.DurationField()
+    duration = models.DurationField(verbose_name='Длительность')
     genre = models.ForeignKey(
         Genre,
         on_delete=models.PROTECT,
         verbose_name='Жанр'
+    )
+    age_rating = models.ForeignKey(
+        AgeRating,
+        on_delete=models.PROTECT,
+        verbose_name='Возрастное ограничение',
+        related_name='movies'
     )
     poster = models.ImageField(
         upload_to='movie_posters/',
@@ -295,7 +326,7 @@ class Movie(models.Model):
     )
 
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.age_rating})"
 
     def save(self, *args, **kwargs):
         # Если короткое описание не задано, создаем его из полного
@@ -309,6 +340,7 @@ class Movie(models.Model):
         indexes = [
             models.Index(fields=['title']),
             models.Index(fields=['genre']),
+            models.Index(fields=['age_rating']),
         ]
 
 

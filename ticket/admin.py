@@ -10,7 +10,7 @@ from django.utils import timezone
 from .export_utils import LogExporter
 from .forms import ReportFilterForm, MovieForm
 from .logging_utils import OperationLogger
-from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog
+from .models import BackupManager, PasswordResetRequest, PendingRegistration, Report, OperationLog, AgeRating
 from .models import Hall, Movie, Screening, Seat, Ticket, User, Genre
 from .report_utils import ReportGenerator
 from django import forms
@@ -162,13 +162,47 @@ class GenreAdmin(LoggingModelAdmin):
     merge_duplicate_genres.short_description = "🔀 Объединить выбранные жанры"
 
 
+@admin.register(AgeRating)
+class AgeRatingAdmin(LoggingModelAdmin):
+    """Админ-класс для управления возрастными рейтингами"""
+    list_display = ('name', 'description_short', 'movie_count', 'created_at')
+    list_filter = ('name',)
+    search_fields = ('name', 'description')
+    readonly_fields = ('created_at', 'updated_at')
+    list_per_page = 20
+
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'description')
+        }),
+        ('Системная информация', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def description_short(self, obj):
+        """Короткое описание"""
+        if obj.description and len(obj.description) > 50:
+            return obj.description[:50] + '...'
+        return obj.description or '-'
+
+    description_short.short_description = 'Описание'
+
+    def movie_count(self, obj):
+        """Количество фильмов с этим рейтингом"""
+        return obj.movies.count()
+
+    movie_count.short_description = 'Количество фильмов'
+
+
 @admin.register(Movie)
 class MovieAdmin(LoggingModelAdmin):
-    list_display = ('title', 'genre', 'duration_formatted', 'has_poster', 'screening_count')
+    list_display = ('title', 'genre', 'age_rating', 'duration_formatted', 'has_poster', 'screening_count')
     search_fields = ('title', 'genre__name', 'short_description', 'description')
-    list_filter = ('genre',)
+    list_filter = ('genre', 'age_rating')
     list_per_page = 20
-    form = MovieForm  # Используем кастомную форму
+    form = MovieForm
     readonly_fields = ('created_at',) if hasattr(Movie, 'created_at') else ()
 
     def duration_formatted(self, obj):

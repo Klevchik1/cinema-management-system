@@ -40,6 +40,11 @@
         </div>
 
         <div class="form-group">
+            <label for="id_age_rating">Возрастной рейтинг</label>
+            {{ form.age_rating }}
+        </div>
+
+        <div class="form-group">
             <label for="id_poster">Постер фильма</label>
             {{ form.poster }}
             {% if form.instance.poster %}
