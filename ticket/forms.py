@@ -188,16 +188,6 @@ class MovieForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
-    new_genre = forms.CharField(
-        max_length=50,
-        required=False,
-        label='Или создайте новый жанр',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Введите название нового жанра'
-        })
-    )
-
     class Meta:
         model = Movie
         fields = ['title', 'short_description', 'description', 'duration', 'poster']
@@ -219,7 +209,7 @@ class MovieForm(forms.ModelForm):
 
         # Заполняем выбор существующих жанров
         genres = Genre.objects.all().values_list('name', 'name')
-        self.fields['genre_choice'].choices = [('', '---------')] + list(genres) + [('new', '➕ Создать новый жанр...')]
+        self.fields['genre_choice'].choices = [('', '---------')] + list(genres)
 
         # Если редактируем существующий фильм, устанавливаем текущий жанр
         if self.instance and self.instance.pk and self.instance.genre:
