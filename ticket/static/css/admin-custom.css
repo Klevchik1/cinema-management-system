@@ -1,0 +1,35 @@
+/* ticket/static/css/admin-custom.css */
+:root {
+    /* Основные цвета сайта */
+    --cinema-bg: #000;
+    --cinema-bg-gradient: linear-gradient(135deg, #000 0%, #222 100%);
+    --cinema-primary: #ff0000;
+    --cinema-primary-dark: #cc0000;
+    --cinema-accent: #ffcc00;
+    --cinema-secondary: #4a00e0;
+    --cinema-secondary-light: #8e2de2;
+    --cinema-card: rgba(30, 30, 30, 0.95);
+    --cinema-text: #fff;
+    --cinema-text-secondary: #aaa;
+    --cinema-border: #ff0000;
+    --cinema-success: #4CAF50;
+    --cinema-warning: #ff9800;
+    --cinema-error: #f44336;
+
+    /* Переопределяем переменные Django */
+    --primary: var(--cinema-primary);
+    --secondary: var(--cinema-secondary);
+    --accent: var(--cinema-accent);
+    --body-bg: var(--cinema-bg);
+    --body-fg: var(--cinema-text);
+    --darkened-bg: var(--cinema-card);
+    --border-color: var(--cinema-border);
+    --header-bg: rgba(30, 30, 30, 0.9);
+    --header-color: var(--cinema-accent);
+    --link-fg: var(--cinema-accent);
+    --link-hover-color: var(--cinema-primary);
+    --button-bg: var(--cinema-primary);
+    --button-hover-bg: var(--cinema-primary-dark);
+    --default-button-bg: var(--cinema-secondary);
+    --default-button-hover-bg: var(--cinema-secondary-light);
+}

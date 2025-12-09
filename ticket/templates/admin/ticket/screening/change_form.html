@@ -4,6 +4,42 @@
 {% block extrahead %}
 {{ block.super }}
 <style>
+
+/* Специальные стили для калькулятора цены */
+    .field-price_calculation {
+        background: rgba(20, 20, 20, 0.9) !important;
+        border-left: 4px solid #ffcc00 !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+        margin: 15px 0 !important;
+    }
+
+    #id_price_calculation {
+        background: #1a1a1a !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #444 !important;
+        font-family: 'Consolas', 'Monaco', monospace !important;
+        font-size: 13px !important;
+        line-height: 1.4 !important;
+        padding: 12px !important;
+        border-radius: 6px !important;
+        width: 100% !important;
+        max-width: 800px !important;
+        height: 200px !important;
+        resize: vertical !important;
+    }
+
+    #id_price {
+        background: rgba(20, 20, 20, 0.9) !important;
+        border: 2px solid #ffcc00 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        font-size: 18px !important;
+        padding: 10px !important;
+        border-radius: 6px !important;
+        text-align: center !important;
+        width: 150px !important;
+    }
 /* Стили для поля расчета стоимости (встроенные) */
 #id_price_calculation {
     background-color: var(--body-bg);
