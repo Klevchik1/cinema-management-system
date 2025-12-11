@@ -707,7 +707,29 @@
                                 <h3>{{ group.movie_title }}</h3>
                                 <small style="color: #aaa;">Группа из {{ group.ticket_count }} билет(а)</small>
                             </div>
-                            <a href="{% url 'download_ticket_group' group.group_id %}" class="btn-buy">Скачать все билеты</a>
+
+                            <!-- ИЗМЕНЕНИЕ: Проверяем можно ли скачивать -->
+                            {% if group.group_status == 'refunded' %}
+                                {% if user.is_staff %}
+                                    <!-- Админ видит кнопку скачивания -->
+                                    <a href="{% url 'download_ticket_group' group.group_id %}" class="btn-buy"
+                                       style="background: linear-gradient(135deg, #666 0%, #444 100%);">
+                                        📥 Скачать (админ)
+                                    </a>
+                                {% else %}
+                                    <!-- Обычный пользователь видит сообщение -->
+                                    <span class="btn-buy" style="background: linear-gradient(135deg, #666 0%, #444 100%);
+                                                                 opacity: 0.7; cursor: not-allowed;"
+                                          title="Билет возвращён. Скачивание недоступно.">
+                                        ⛔ Недоступно
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <!-- Для активных билетов обычная кнопка -->
+                                <a href="{% url 'download_ticket_group' group.group_id %}" class="btn-buy">
+                                    📥 Скачать билеты
+                                </a>
+                            {% endif %}
                         </div>
 
                         <div class="ticket-info">

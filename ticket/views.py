@@ -595,6 +595,13 @@ def download_ticket(request):
 def download_ticket_single(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
 
+    # Проверяем статус билета
+    if ticket.status and ticket.status.code == 'refunded':
+        # Для админов разрешаем скачивание
+        if not request.user.is_staff:
+            messages.error(request, 'Нельзя скачать возвращённый билет')
+            return redirect('profile')
+
     # Если билет входит в группу, скачиваем всю группу
     if ticket.group_id:
         tickets = Ticket.objects.filter(group_id=ticket.group_id, user=request.user)
@@ -613,7 +620,9 @@ def download_ticket_single(request, ticket_id):
             'format': 'PDF',
             'movie': ticket.screening.movie.title,
             'ticket_count': len(tickets),
-            'group_id': ticket.group_id
+            'group_id': ticket.group_id,
+            'status': ticket.status.code if ticket.status else 'unknown',
+            'is_refunded': ticket.status and ticket.status.code == 'refunded'
         }
     )
 
@@ -643,6 +652,16 @@ def download_ticket_group(request, group_id):
         messages.error(request, "Билеты не найдены.")
         return redirect('profile')
 
+    # Проверяем статус группы билетов
+    # Если хотя бы один билет в группе имеет статус 'refunded', ограничиваем скачивание
+    has_refunded_tickets = any(ticket.status and ticket.status.code == 'refunded' for ticket in tickets)
+
+    if has_refunded_tickets:
+        # Для админов разрешаем скачивание
+        if not request.user.is_staff:
+            messages.error(request, 'В этой группе есть возвращённые билеты. Скачивание невозможно.')
+            return redirect('profile')
+
     # ЛОГИРОВАНИЕ СКАЧИВАНИЯ PDF ГРУППЫ
     OperationLogger.log_operation(
         request=request,
@@ -655,7 +674,8 @@ def download_ticket_group(request, group_id):
             'format': 'PDF',
             'movie': tickets[0].screening.movie.title,
             'ticket_count': len(tickets),
-            'group_id': group_id
+            'group_id': group_id,
+            'has_refunded_tickets': has_refunded_tickets
         }
     )
 
@@ -717,6 +737,9 @@ def profile(request):
         group_id = ticket.group_id if ticket.group_id else f"single_{ticket.id}"
 
         if group_id not in groups_dict:
+            # Получаем статус группы
+            group_status = get_group_status(ticket, group_id, groups_dict)
+
             groups_dict[group_id] = {
                 'group_id': group_id,
                 'movie_title': ticket.screening.movie.title,
@@ -735,9 +758,10 @@ def profile(request):
                 'is_future_screening': ticket.screening.start_time > timezone.now(),
                 'can_be_refunded': ticket.can_be_refunded()[0] if hasattr(ticket, 'can_be_refunded') else False,
                 'refund_message': ticket.can_be_refunded()[1] if hasattr(ticket, 'can_be_refunded') else '',
-                # Важное: определяем статус группы
-                'group_status': get_group_status(ticket, group_id, groups_dict),
+                'group_status': group_status,
                 'status_display': get_group_status_display(ticket.status),
+                'can_be_downloaded': group_status != 'refunded' or request.user.is_staff,
+                'download_disabled_message': 'Билет возвращён' if group_status == 'refunded' else '',
             }
 
         # Добавляем информацию о месте
@@ -755,6 +779,8 @@ def profile(request):
         if ticket.status and ticket.status.code == 'refunded':
             groups_dict[group_id]['group_status'] = 'refunded'
             groups_dict[group_id]['status_display'] = 'Возвращен'
+            groups_dict[group_id]['can_be_downloaded'] = request.user.is_staff  # Обновляем возможность скачивания
+            groups_dict[group_id]['download_disabled_message'] = 'Билет возвращён'
         elif ticket.status and ticket.status.code == 'refund_requested':
             groups_dict[group_id]['group_status'] = 'refund_requested'
             groups_dict[group_id]['status_display'] = 'Запрошен возврат'
@@ -1740,3 +1766,5 @@ def calculate_screening_price(request):
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
+
+

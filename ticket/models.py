@@ -612,6 +612,34 @@ class TicketStatus(models.Model):
             except Exception as e:
                 logger.error(f"Error logging ticket purchase: {e}")
 
+    def can_be_downloaded(self, user=None):
+        """
+        Проверяет, можно ли скачать билет
+        user - если None, проверяет текущего пользователя
+        """
+        # Админы могут скачивать всегда
+        if user and user.is_staff:
+            return True
+
+        # Проверяем статус билета
+        if self.status and self.status.code == 'refunded':
+            return False
+
+        return True
+
+    def get_download_url(self, user=None):
+        """
+        Получить URL для скачивания или None если нельзя скачать
+        """
+        if not self.can_be_downloaded(user):
+            return None
+
+        if self.group_id:
+            # Если есть group_id, возвращаем URL для скачивания группы
+            return reverse('download_ticket_group', args=[self.group_id])
+        else:
+            return reverse('download_ticket_single', args=[self.id])
+
     class Meta:
         verbose_name = 'Статус билета'
         verbose_name_plural = 'Статусы билетов'
