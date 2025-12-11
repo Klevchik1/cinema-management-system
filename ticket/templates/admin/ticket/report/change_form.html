@@ -1,0 +1,23 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Дополнительные стили для отчетов */
+    .report-container {
+        background: var(--cinema-card);
+        border: 2px solid var(--cinema-red);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .report-filters .form-row {
+        background: rgba(20, 20, 20, 0.8);
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 0, 0, 0.3);
+    }
+</style>
+{% endblock %}

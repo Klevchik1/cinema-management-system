@@ -122,6 +122,8 @@ class GenreAdmin(LoggingModelAdmin):
     readonly_fields = ('created_at',)
     form = GenreAdminForm
 
+    list_filter = ('created_at',)  # Фильтр по дате создания
+
     def movie_count(self, obj):
         """Количество фильмов в этом жанре"""
         return obj.movie_set.count()

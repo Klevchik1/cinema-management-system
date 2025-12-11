@@ -247,7 +247,7 @@
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 36px !important;
+        height: 38px !important; /* УНИФИЦИРОВАНАЯ ВЫСОТА */
         line-height: 1 !important;
         vertical-align: middle !important;
         transition: all 0.3s ease !important;
@@ -347,13 +347,15 @@
         padding: 0 !important;
     }
 
+    /* ИСПРАВЛЕНИЕ: УБИРАЕМ СВЕЧЕНИЕ С БОКОВЫХ СТОРОН */
     #changelist .results {
         background: var(--cinema-card) !important;
         border: 2px solid var(--cinema-red) !important;
         border-radius: 8px !important;
         overflow: hidden !important;
         margin-bottom: 20px !important;
-        box-shadow: 0 0 10px rgba(255, 0, 0, 0.2) !important;
+        /* УБИРАЕМ box-shadow - он создает проблему со свечением */
+        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.1) !important; /* Только вертикальная тень */
     }
 
     #result_list {
@@ -479,8 +481,246 @@
         display: none !important;
     }
 
-    /* ===== АДАПТИВНОСТЬ ===== */
+    /* =================================================================== */
+    /* =============== НАЧАЛО НОВЫХ ИСПРАВЛЕНИЙ ================ */
+    /* =================================================================== */
+
+    /* ===== 1. ИСПРАВЛЕНИЕ ПОИСКА ===== */
+    #changelist-search {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+        flex-wrap: wrap !important;
+    }
+
+    #searchbar {
+        height: 38px !important;
+        line-height: 38px !important;
+        padding: 0 15px !important;
+        min-width: 300px !important;
+        flex-grow: 1 !important;
+        background: rgba(20, 20, 20, 0.9) !important;
+        border: 2px solid var(--cinema-red) !important;
+        color: var(--cinema-white) !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    #searchbar:focus {
+        border-color: var(--cinema-yellow) !important;
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.3) !important;
+        outline: none !important;
+    }
+
+    #changelist-search button[type="submit"] {
+        height: 38px !important;
+        line-height: 1 !important;
+        padding: 0 25px !important;
+        background: linear-gradient(135deg, var(--cinema-red) 0%, var(--cinema-dark-red) 100%) !important;
+        color: var(--cinema-white) !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: bold !important;
+        font-size: 14px !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        white-space: nowrap !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        vertical-align: middle !important;
+        min-width: 100px !important;
+    }
+
+    #changelist-search button[type="submit"]:hover {
+        background: linear-gradient(135deg, var(--cinema-dark-red) 0%, #990000 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 10px rgba(255, 0, 0, 0.4) !important;
+    }
+
+    /* ===== 2. ИСПРАВЛЕНИЕ ВЫПАДАЮЩЕГО СПИСКА ДЕЙСТВИЙ ===== */
+    #changelist-form .actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+        flex-wrap: wrap !important;
+    }
+
+    #changelist-form .actions select[name="action"] {
+        height: 38px !important;
+        line-height: 38px !important;
+        padding: 0 40px 0 15px !important;
+        min-width: 200px !important;
+        background: rgba(20, 20, 20, 0.9) !important;
+        border: 2px solid var(--cinema-red) !important;
+        color: var(--cinema-white) !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        appearance: none !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffcc00'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+        background-size: 16px !important;
+        cursor: pointer !important;
+    }
+
+    #changelist-form .actions select[name="action"] option {
+        padding: 10px 15px !important;
+        line-height: 1.4 !important;
+        background: rgba(30, 30, 30, 0.95) !important;
+        color: var(--cinema-white) !important;
+        font-size: 14px !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 36px !important;
+    }
+
+    #changelist-form .actions select[name="action"]:focus {
+        border-color: var(--cinema-yellow) !important;
+        outline: none !important;
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.3) !important;
+    }
+
+    /* ===== 3. ГОРИЗОНТАЛЬНАЯ ПРОКРУТКА ДЛЯ ДЛИННЫХ ТАБЛИЦ ===== */
+    #changelist .results {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin-bottom: 20px !important;
+        border-radius: 8px !important;
+        border: 2px solid var(--cinema-red) !important;
+        position: relative !important;
+        /* УБИРАЕМ ВСЕ ТЕНИ С БОКОВ - они создают проблему со свечением при прокрутке */
+        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.15) !important; /* Только вертикальная тень */
+    }
+
+    #result_list {
+        min-width: 1000px !important;
+        width: 100% !important;
+        table-layout: auto !important;
+    }
+
+    /* Индикатор горизонтальной прокрутки - УПРОЩЕННАЯ ВЕРСИЯ */
+    #changelist .results::-webkit-scrollbar {
+        height: 8px !important;
+    }
+
+    #changelist .results::-webkit-scrollbar-track {
+        background: rgba(255, 0, 0, 0.05) !important;
+        border-radius: 4px !important;
+        margin: 0 10px !important;
+    }
+
+    #changelist .results::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, var(--cinema-red) 0%, var(--cinema-dark-red) 100%) !important;
+        border-radius: 4px !important;
+    }
+
+    #changelist .results::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, var(--cinema-dark-red) 0%, #990000 100%) !important;
+    }
+
+    /* ===== 4. ЕДИНЫЙ РАЗМЕР ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ В ОТЧЕТАХ ===== */
+    .report-filters {
+        background: var(--cinema-card) !important;
+        border: 2px solid var(--cinema-red) !important;
+        border-radius: 8px !important;
+        padding: 20px !important;
+        margin-bottom: 25px !important;
+        /* Убираем боковые тени для отчетов тоже */
+        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.1) !important;
+    }
+
+    .report-filters .form-row {
+        display: flex !important;
+        align-items: center !important;
+        gap: 15px !important;
+        margin-bottom: 20px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .report-filters .form-row label {
+        min-width: 140px !important;
+        text-align: right !important;
+        font-weight: bold !important;
+        color: var(--cinema-yellow) !important;
+        margin: 0 !important;
+        font-size: 14px !important;
+    }
+
+    .report-filters select,
+    .report-filters input[type="text"],
+    .report-filters input[type="date"] {
+        height: 38px !important;
+        min-width: 220px !important;
+        max-width: 300px !important;
+        background: rgba(20, 20, 20, 0.9) !important;
+        border: 2px solid var(--cinema-red) !important;
+        color: var(--cinema-white) !important;
+        border-radius: 6px !important;
+        padding: 0 15px !important;
+        font-size: 14px !important;
+        line-height: 38px !important;
+        box-sizing: border-box !important;
+        vertical-align: middle !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .report-filters select {
+        appearance: none !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffcc00'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+        background-size: 16px !important;
+        padding-right: 40px !important;
+    }
+
+    .report-filters select:focus,
+    .report-filters input[type="text"]:focus,
+    .report-filters input[type="date"]:focus {
+        border-color: var(--cinema-yellow) !important;
+        outline: none !important;
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.3) !important;
+    }
+
+    /* ===== 5. УЛУЧШЕНИЯ ДЛЯ ВСЕХ ВЫПАДАЮЩИХ СПИСКОВ ===== */
+    select {
+        height: 38px !important;
+        line-height: 38px !important;
+        padding: 0 40px 0 15px !important;
+        background: rgba(20, 20, 20, 0.9) url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffcc00'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 12px center/16px !important;
+        border: 2px solid var(--cinema-red) !important;
+        color: var(--cinema-white) !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        appearance: none !important;
+        cursor: pointer !important;
+        min-height: 38px !important;
+    }
+
+    select:focus {
+        border-color: var(--cinema-yellow) !important;
+        outline: none !important;
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.3) !important;
+    }
+
+    select option {
+        padding: 10px 15px !important;
+        line-height: 1.4 !important;
+        background: rgba(30, 30, 30, 0.95) !important;
+        color: var(--cinema-white) !important;
+        font-size: 14px !important;
+        min-height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* ===== АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ ===== */
     @media (max-width: 768px) {
+        /* Шапка */
         #header {
             height: auto !important;
             padding: 10px !important;
@@ -500,6 +740,93 @@
             width: 100% !important;
             margin: 0 0 20px 0 !important;
         }
+
+        /* Поиск и действия */
+        #changelist-search {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        #searchbar {
+            min-width: 100% !important;
+            margin-bottom: 10px !important;
+        }
+
+        #changelist-search button[type="submit"] {
+            width: 100% !important;
+        }
+
+        #changelist-form .actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        #changelist-form .actions select[name="action"] {
+            min-width: 100% !important;
+            margin-bottom: 10px !important;
+        }
+
+        /* Отчеты */
+        .report-filters .form-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+        }
+
+        .report-filters .form-row label {
+            min-width: 100% !important;
+            text-align: left !important;
+            margin-bottom: 5px !important;
+        }
+
+        .report-filters select,
+        .report-filters input[type="text"],
+        .report-filters input[type="date"] {
+            min-width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Таблицы */
+        #result_list {
+            min-width: 800px !important;
+        }
+
+        /* Убираем все тени на мобильных для чистоты */
+        #changelist .results,
+        .report-filters,
+        #content-main {
+            box-shadow: 0 3px 10px rgba(255, 0, 0, 0.1) !important;
+        }
+    }
+
+    /* ===== ВАЖНОЕ ИСПРАВЛЕНИЕ: УБИРАЕМ ВСЕ БОКОВЫЕ ТЕНИ ===== */
+    /* Это решает проблему со свечением при горизонтальной прокрутке */
+    #changelist .results:before,
+    #changelist .results:after {
+        display: none !important;
+    }
+
+    /* Альтернативное решение: делаем тень только внутри контейнера */
+    .results-container {
+        position: relative;
+    }
+
+    .results-container:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 20px;
+        background: linear-gradient(to left, rgba(255, 0, 0, 0.1), transparent);
+        pointer-events: none;
+        z-index: 2;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .results-container.scrolling:after {
+        opacity: 1;
     }
 </style>
 {% endblock %}
@@ -511,50 +838,160 @@
 {% block footer %}
 {{ block.super }}
 <script>
-// Убираем кнопку переключения темы полностью
+// JavaScript для исправления проблем с админкой
 document.addEventListener('DOMContentLoaded', function() {
-    // Удаляем кнопку темы
-    const themeBtn = document.querySelector('#toggle-theme, .theme-toggle, a[href*="theme"]');
-    if (themeBtn) themeBtn.remove();
+    console.log('Admin improvements script loaded');
 
-    // Удаляем все лишние ссылки из шапки
-    const headerLinks = document.querySelectorAll('#header a');
-    headerLinks.forEach(link => {
-        if (link.href.includes('backup_management') ||
-            link.textContent.includes('Управление') ||
-            link.textContent.includes('На главный') ||
-            link.textContent.includes('На главную')) {
-            link.style.display = 'none';
-        }
-    });
-
-    // Исправляем высоту кнопок
-    document.querySelectorAll('.button, input[type="submit"], a.button').forEach(btn => {
-        btn.style.display = 'inline-flex';
-        btn.style.alignItems = 'center';
-        btn.style.justifyContent = 'center';
-        btn.style.height = '36px';
-        btn.style.lineHeight = '1';
-    });
-
-    // Добавляем иконки к выпадающим спискам
+    // 1. Исправляем выравнивание текста в select
     document.querySelectorAll('select').forEach(select => {
-        const wrapper = select.parentElement;
-        if (wrapper && !wrapper.classList.contains('has-icon')) {
-            wrapper.classList.add('has-icon');
-            wrapper.style.position = 'relative';
+        // Принудительно устанавливаем высоту и выравнивание
+        select.style.height = '38px';
+        select.style.lineHeight = '38px';
+        select.style.paddingTop = '0';
+        select.style.paddingBottom = '0';
+        select.style.verticalAlign = 'middle';
 
-            const icon = document.createElement('span');
-            icon.innerHTML = '▼';
-            icon.style.position = 'absolute';
-            icon.style.right = '10px';
-            icon.style.top = '50%';
-            icon.style.transform = 'translateY(-50%)';
-            icon.style.color = '#ffcc00';
-            icon.style.pointerEvents = 'none';
-            wrapper.appendChild(icon);
+        // Добавляем стрелочку если её нет
+        if (!select.style.backgroundImage || select.style.backgroundImage === 'none') {
+            select.style.backgroundImage = "url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"%23ffcc00\"%3e%3cpath d=\"M7 10l5 5 5-5z\"/%3e%3c/svg%3e')";
+            select.style.backgroundRepeat = 'no-repeat';
+            select.style.backgroundPosition = 'right 12px center';
+            select.style.backgroundSize = '16px';
+            select.style.paddingRight = '40px';
         }
     });
+
+    // 2. Настраиваем пропорции поиска
+    function adjustSearchLayout() {
+        const searchInput = document.querySelector('#searchbar');
+        const searchButton = document.querySelector('#changelist-search button[type="submit"]');
+
+        if (searchInput && searchButton) {
+            // На десктопе делаем пропорциональные размеры
+            if (window.innerWidth >= 768) {
+                const container = searchInput.parentElement;
+                if (container) {
+                    // Занимаем 70% ширины для поиска, 30% для кнопки
+                    searchInput.style.flex = '3';
+                    searchButton.style.flex = '1';
+                    searchButton.style.minWidth = '120px';
+                }
+            }
+        }
+    }
+
+    // 3. УПРАЩЕННАЯ версия индикатора прокрутки - без свечения
+    function addTableScrollIndicators() {
+        const tables = document.querySelectorAll('#result_list');
+        tables.forEach(table => {
+            const container = table.closest('.results');
+            if (container) {
+                // Убираем все старые индикаторы
+                const oldIndicators = container.querySelectorAll('.scroll-indicator-right, .scroll-indicator-left');
+                oldIndicators.forEach(ind => ind.remove());
+
+                // Если таблица шире контейнера
+                if (table.scrollWidth > container.clientWidth) {
+                    // Добавляем очень тонкий индикатор справа (без свечения)
+                    const indicatorRight = document.createElement('div');
+                    indicatorRight.className = 'scroll-indicator-right';
+                    indicatorRight.style.cssText = `
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        bottom: 0;
+                        width: 15px;
+                        background: linear-gradient(to right, transparent, rgba(255, 0, 0, 0.05));
+                        pointer-events: none;
+                        z-index: 2;
+                        border-radius: 0 6px 6px 0;
+                    `;
+                    container.appendChild(indicatorRight);
+                }
+            }
+        });
+    }
+
+    // 4. Выравниваем элементы в отчетах
+    function alignReportElements() {
+        document.querySelectorAll('.report-filters select, .report-filters input').forEach(el => {
+            el.style.height = '38px';
+            el.style.lineHeight = '38px';
+            el.style.minWidth = '220px';
+        });
+    }
+
+    // 5. Исправляем кнопки
+    function fixButtons() {
+        document.querySelectorAll('.button, input[type="submit"], .btn').forEach(btn => {
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.height = '38px';
+            btn.style.lineHeight = '1';
+            btn.style.padding = '0 20px';
+        });
+    }
+
+    // 6. Убираем динамическое свечение при скролле
+    function removeScrollGlow() {
+        const resultsContainers = document.querySelectorAll('#changelist .results');
+        resultsContainers.forEach(container => {
+            // Убираем любые box-shadow с боковых сторон
+            container.style.boxShadow = '0 5px 15px rgba(255, 0, 0, 0.15)';
+
+            // Отслеживаем скролл и убираем индикаторы если нужно
+            container.addEventListener('scroll', function() {
+                // Просто убираем любые дополнительные эффекты
+                const indicators = this.querySelectorAll('.scroll-indicator-right, .scroll-indicator-left');
+                indicators.forEach(ind => ind.style.opacity = '0.3');
+            });
+        });
+    }
+
+    // Инициализируем все функции
+    adjustSearchLayout();
+    addTableScrollIndicators();
+    alignReportElements();
+    fixButtons();
+    removeScrollGlow();
+
+    // Обновляем при изменении размера окна
+    window.addEventListener('resize', function() {
+        setTimeout(() => {
+            adjustSearchLayout();
+            addTableScrollIndicators();
+            removeScrollGlow();
+        }, 100);
+    });
+
+    // Обновляем при загрузке AJAX контента
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length) {
+                setTimeout(() => {
+                    adjustSearchLayout();
+                    addTableScrollIndicators();
+                    alignReportElements();
+                    fixButtons();
+                    removeScrollGlow();
+
+                    // Повторно применяем стили к select
+                    document.querySelectorAll('select').forEach(select => {
+                        select.style.height = '38px';
+                        select.style.lineHeight = '38px';
+                    });
+                }, 300);
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    console.log('All admin improvements applied');
 });
 </script>
 {% endblock %}
