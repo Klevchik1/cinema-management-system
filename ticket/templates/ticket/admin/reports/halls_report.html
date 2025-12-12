@@ -1,72 +1,150 @@
-<h3 style="color: var(--header-color); margin-bottom: 20px;">🏛️ Загруженность залов</h3>
+<div class="halls-report">
+    <h2 style="color: var(--report-secondary); margin-bottom: 25px; font-size: 1.5rem; border-bottom: 2px solid var(--report-border); padding-bottom: 10px;">
+        🏛️ Загруженность залов
+    </h2>
 
-{% if report_data %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 20px;">
-        {% for hall in report_data %}
-        <div class="hall-card">
-            <h4 style="margin: 0 0 15px 0; color: var(--primary);">{{ hall.name }}</h4>
+    {% if report_data %}
+        <!-- Рассчитываем общие показатели -->
+        {% load report_filters %}
+        {% with aggregated=report_data|aggregate_halls_stats %}
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Всего мест</div>
-                    <div style="font-size: 1.2em; font-weight: bold; color: var(--body-fg);">{{ hall.total_seats }}</div>
-                </div>
-                <div>
-                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Сеансов</div>
-                    <div style="font-size: 1.2em; font-weight: bold; color: var(--body-fg);">{{ hall.total_screenings }}</div>
+        <!-- Общая статистика -->
+        <div class="metrics-grid">
+            <div class="metric-item">
+                <div class="metric-label">Средняя загруженность</div>
+                <div class="metric-value">
+                    {{ aggregated.avg_occupancy }}%
                 </div>
             </div>
-
-            <hr style="margin: 10px 0; border-color: var(--border-color);">
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 15px;">
-                <div>
-                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Продано билетов</div>
-                    <div style="font-size: 1.2em; font-weight: bold; color: var(--info);">{{ hall.sold_tickets }}</div>
-                </div>
-                <div>
-                    <div style="font-size: 0.8em; color: var(--body-quiet-color);">Выручка</div>
-                    <div style="font-size: 1.2em; font-weight: bold; color: var(--success);">{{ hall.total_revenue|floatformat:2 }} руб.</div>
+            <div class="metric-item">
+                <div class="metric-label">Общая выручка</div>
+                <div class="metric-value">
+                    {{ aggregated.total_revenue|floatformat:2 }} ₽
                 </div>
             </div>
-
-            <div>
-                <div style="font-size: 0.8em; color: var(--body-quiet-color); margin-bottom: 5px;">
-                    Загруженность ({{ hall.occupancy_percent }}%)
+            <div class="metric-item">
+                <div class="metric-label">Всего билетов</div>
+                <div class="metric-value">
+                    {{ aggregated.total_tickets }}
                 </div>
-                <div class="progress" style="height: 25px; position: relative; background: var(--darkened-bg); border-radius: 5px; overflow: hidden;">
-                    <!-- ИСПРАВЛЕНО: визуальное заполнение прогресс-бара -->
-                    <div class="progress-bar"
-                         style="position: absolute;
-                                top: 0;
-                                left: 0;
-                                height: 100%;
-                                background: {% if hall.occupancy_percent > 70 %}var(--success){% elif hall.occupancy_percent > 30 %}var(--warning){% else %}var(--error){% endif %};
-                                width: {{ hall.occupancy_percent }}%;
-                                border-radius: 5px;
-                                transition: width 0.3s ease;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                color: white;
-                                font-weight: bold;
-                                font-size: 0.8em;
-                                min-width: {% if hall.occupancy_percent > 0 %}20px{% else %}0{% endif %};">
-                        {% if hall.occupancy_percent > 5 %}{{ hall.occupancy_percent }}%{% endif %}
-                    </div>
-                    <!-- ИСПРАВЛЕНО: текст поверх прогресс-бара для малых значений -->
-                    {% if hall.occupancy_percent <= 5 %}
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--body-fg); font-weight: bold; font-size: 0.8em;">
-                            {{ hall.occupancy_percent }}%
-                        </div>
-                    {% endif %}
-                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Всего залов</div>
+                <div class="metric-value">{{ report_data|length }}</div>
             </div>
         </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <div class="alert alert-info">
-        ℹ️ Нет данных по загруженности залов за выбранный период.
-    </div>
-{% endif %}
+
+        <!-- Карточки залов -->
+        <div class="hall-grid">
+            {% for hall in report_data %}
+            <div class="hall-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="margin: 0; color: var(--report-secondary);">{{ hall.name }}</h4>
+                    <span class="badge
+                        {% if hall.occupancy_percent >= 70 %}success
+                        {% elif hall.occupancy_percent >= 40 %}warning
+                        {% else %}info{% endif %}">
+                        {{ hall.occupancy_percent|floatformat:1 }}%
+                    </span>
+                </div>
+
+                <!-- Показатели зала -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--report-muted); margin-bottom: 3px;">
+                            Всего мест
+                        </div>
+                        <div style="font-size: 1.3rem; font-weight: bold; color: var(--report-text);">
+                            {{ hall.total_seats }}
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--report-muted); margin-bottom: 3px;">
+                            Сеансов
+                        </div>
+                        <div style="font-size: 1.3rem; font-weight: bold; color: var(--report-text);">
+                            {{ hall.total_screenings }}
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--report-muted); margin-bottom: 3px;">
+                            Продано
+                        </div>
+                        <div style="font-size: 1.3rem; font-weight: bold; color: var(--report-info);">
+                            {{ hall.sold_tickets }}
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--report-muted); margin-bottom: 3px;">
+                            Выручка
+                        </div>
+                        <div style="font-size: 1.3rem; font-weight: bold; color: var(--report-success);">
+                            {{ hall.total_revenue|floatformat:2 }} ₽
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Информация о загруженности (без прогресс-бара) -->
+                <div style="text-align: center; padding: 10px; background: rgba(255, 0, 0, 0.1); border-radius: 6px;">
+                    <div style="font-size: 0.9rem; color: var(--report-muted);">Загруженность</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--report-secondary);">
+                        {{ hall.occupancy_percent|floatformat:1 }}%
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--report-muted);">
+                        {{ hall.sold_tickets }} / {{ hall.total_seats }} мест × {{ hall.total_screenings }} сеансов
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Сводная таблица -->
+        <div style="margin-top: 30px;">
+            <h3 style="color: var(--report-text); margin-bottom: 15px; font-size: 1.1rem;">
+                📋 Сводная таблица залов
+            </h3>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Зал</th>
+                        <th>Загруженность</th>
+                        <th>Выручка</th>
+                        <th>Продажи</th>
+                        <th>Сеансы</th>
+                        <th>Рейтинг</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hall in report_data|dictsortreversed:"sold_tickets" %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ hall.name }}</td>
+                        <td style="font-weight: bold; color: var(--report-secondary);">
+                            {{ hall.occupancy_percent|floatformat:1 }}%
+                        </td>
+                        <td style="font-weight: bold; color: var(--report-success);">
+                            {{ hall.total_revenue|floatformat:2 }} ₽
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge info">{{ hall.sold_tickets }}</span>
+                        </td>
+                        <td style="text-align: center;">{{ hall.total_screenings }}</td>
+                        <td>
+                            <span class="badge
+                                {% if forloop.counter == 1 %}success
+                                {% elif forloop.counter <= 3 %}warning
+                                {% else %}info{% endif %}">
+                                {{ forloop.counter }} место
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endwith %}
+    {% else %}
+        <div class="alert">
+            ℹ️ Нет данных по загруженности залов за выбранный период.
+        </div>
+    {% endif %}
+</div>

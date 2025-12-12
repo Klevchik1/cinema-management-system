@@ -31,6 +31,7 @@ from django.http import JsonResponse
 import json
 from decimal import Decimal
 import random
+from .report_utils import ReportGenerator
 
 logger = logging.getLogger(__name__)
 from .logging_utils import OperationLogger
@@ -1644,3 +1645,43 @@ def calculate_screening_price(request):
             return JsonResponse({'success': False, 'error': str(e)})
 
 
+def generate_report(request):
+    """Генерация отчета"""
+    report_type = request.GET.get('report_type')
+    period = request.GET.get('period', 'daily')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    report_data = None
+
+    if report_type == 'movies':
+        report_data = ReportGenerator.get_popular_movies(
+            start_date=start_date,
+            end_date=end_date
+        )
+    elif report_type == 'halls':
+        report_data = ReportGenerator.get_hall_occupancy(
+            start_date=start_date,
+            end_date=end_date
+        )
+    elif report_type == 'sales':
+        report_data = ReportGenerator.get_sales_statistics(
+            start_date=start_date,
+            end_date=end_date
+        )
+    elif report_type == 'revenue':
+        report_data = ReportGenerator.get_revenue_stats(
+            period=period,
+            start_date=start_date,
+            end_date=end_date
+        )
+
+    return render(request, 'ticket/admin/reports.html', {
+        'report_data': report_data,
+        'report_type': report_type,
+        'filters': {
+            'period': period,
+            'start_date': start_date,
+            'end_date': end_date
+        }
+    })
