@@ -37,8 +37,24 @@
         background: var(--secondary);
         color: var(--button-fg);
     }
+    .btn-success {
+        background: #4caf50;
+        color: white;
+    }
+    .btn-warning {
+        background: #ff9800;
+        color: white;
+    }
+    .btn-danger {
+        background: #f44336;
+        color: white;
+    }
     .btn:hover {
         opacity: 0.9;
+    }
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
     .backup-list {
         margin-top: 20px;
@@ -50,6 +66,25 @@
         border-radius: 4px;
         border-left: 4px solid var(--primary);
         color: var(--body-fg);
+        position: relative;
+    }
+    .backup-item.restoring {
+        border-left-color: #ff9800;
+        background: rgba(255, 152, 0, 0.1);
+    }
+    .backup-item.completed {
+        border-left-color: #4caf50;
+        background: rgba(76, 175, 80, 0.1);
+    }
+    .backup-item.failed {
+        border-left-color: #f44336;
+        background: rgba(244, 67, 54, 0.1);
+    }
+    .backup-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
     }
     .form-group {
         margin: 15px 0;
@@ -75,6 +110,59 @@
     p {
         color: var(--body-fg);
     }
+    .status-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+    .restoration-log {
+        margin-top: 10px;
+        padding: 10px;
+        background: var(--darkened-bg);
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+    .log-toggle {
+        color: var(--link-fg);
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 5px;
+        display: inline-block;
+    }
+    .log-toggle:hover {
+        text-decoration: underline;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+        background-color: var(--body-bg);
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        width: 500px;
+        border-radius: 8px;
+        color: var(--body-fg);
+    }
+    .modal-actions {
+        text-align: right;
+        margin-top: 20px;
+    }
 </style>
 {% endblock %}
 
@@ -92,6 +180,12 @@
             {% endfor %}
         </ul>
     {% endif %}
+
+    <!-- Предупреждение -->
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 20px; color: #856404;">
+        <strong>⚠️ Внимание!</strong> Восстановление базы данных перезапишет все текущие данные.
+        Убедитесь, что у вас есть свежий бэкап перед восстановлением.
+    </div>
 
     <!-- Секция создания бэкапов -->
     <div class="backup-section">
@@ -135,18 +229,46 @@
         {% if backups %}
             <div class="backup-list">
                 {% for backup in backups %}
-                    <div class="backup-item">
-                        <strong>{{ backup.name }}</strong><br>
+                    <div class="backup-item {{ backup.restoration_status }}">
+                        <strong>{{ backup.name }}</strong>
+                        <span class="status-badge" style="background: {{ backup.get_restoration_color }}; color: white;">
+                            {{ backup.get_restoration_status_display }}
+                        </span>
+                        <br>
                         <small>Файл: {{ backup.backup_file }}</small><br>
                         <small>Тип: {{ backup.get_backup_type_display }}</small><br>
                         <small>Дата: {{ backup.backup_date|default:"-" }}</small><br>
                         <small>Создан: {{ backup.created_at|date:"Y-m-d H:i:s" }}</small><br>
                         <small>Размер: {{ backup.file_size }}</small><br>
-                        <small>Статус:
-                            <span style="color: {% if backup.file_exists %}var(--message-success-bg){% else %}var(--message-error-bg){% endif %};">
-                                {{ backup.file_status }}
-                            </span>
-                        </small>
+
+                        {% if backup.restoration_log %}
+                            <div class="log-toggle" onclick="toggleLog({{ backup.id }})">
+                                📋 Показать лог восстановления
+                            </div>
+                            <div id="log-{{ backup.id }}" class="restoration-log">
+                                {{ backup.restoration_log }}
+                            </div>
+                        {% endif %}
+
+                        <div class="backup-actions">
+                            {% if backup.file_exists %}
+                                <a href="javascript:void(0)"
+                                   onclick="confirmRestore({{ backup.id }}, '{{ backup.name|escapejs }}')"
+                                   class="btn btn-success"
+                                   {% if backup.restoration_status == 'in_progress' %}disabled{% endif %}>
+                                    🔄 Восстановить БД
+                                </a>
+                                <a href="/backups/{{ backup.backup_file }}"
+                                   class="btn btn-secondary"
+                                   download>
+                                    ⬇️ Скачать
+                                </a>
+                            {% else %}
+                                <button class="btn btn-danger" disabled>
+                                    ❌ Файл отсутствует
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -163,8 +285,121 @@
     </div>
 </div>
 
+<!-- Модальное окно подтверждения -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <h3>⚠️ Подтверждение восстановления БД</h3>
+        <p>Вы собираетесь восстановить базу данных из бэкапа: <strong id="backupName"></strong></p>
+        <p><strong>Это действие:</strong></p>
+        <ul>
+            <li>Перезапишет все текущие данные</li>
+            <li>Может занять несколько минут</li>
+            <li>Не может быть отменено</li>
+        </ul>
+        <p style="color: #f44336; font-weight: bold;">
+            ⚠️ Перед восстановлением убедитесь, что у вас есть свежий бэкап текущих данных!
+        </p>
+        <div class="modal-actions">
+            <button onclick="closeModal()" class="btn btn-secondary">Отмена</button>
+            <button onclick="performRestore()" class="btn btn-danger" id="restoreBtn">
+                🔄 Да, восстановить БД
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Устанавливаем максимальную дату как сегодня
     document.getElementById('backup_date').max = new Date().toISOString().split('T')[0];
+
+    let currentBackupId = null;
+    let currentBackupName = '';
+
+    function toggleLog(backupId) {
+        const logElement = document.getElementById('log-' + backupId);
+        const toggleElement = logElement.previousElementSibling;
+
+        if (logElement.style.display === 'block') {
+            logElement.style.display = 'none';
+            toggleElement.textContent = '📋 Показать лог восстановления';
+        } else {
+            logElement.style.display = 'block';
+            toggleElement.textContent = '📋 Скрыть лог восстановления';
+        }
+    }
+
+    function confirmRestore(backupId, backupName) {
+        currentBackupId = backupId;
+        currentBackupName = backupName;
+
+        document.getElementById('backupName').textContent = backupName;
+        document.getElementById('confirmModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+        currentBackupId = null;
+        currentBackupName = '';
+    }
+
+    function performRestore() {
+        const restoreBtn = document.getElementById('restoreBtn');
+        restoreBtn.disabled = true;
+        restoreBtn.innerHTML = '⏳ Восстановление...';
+
+        // Отправляем запрос на восстановление
+        fetch(`/admin/ticket/backupmanager/restore-backup/${currentBackupId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Восстановление начато. Проверьте статус на странице.');
+                // Обновляем страницу через 3 секунды
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            } else {
+                alert('❌ Ошибка: ' + data.message);
+                restoreBtn.disabled = false;
+                restoreBtn.innerHTML = '🔄 Да, восстановить БД';
+            }
+            closeModal();
+        })
+        .catch(error => {
+            alert('❌ Ошибка сети: ' + error);
+            restoreBtn.disabled = false;
+            restoreBtn.innerHTML = '🔄 Да, восстановить БД';
+            closeModal();
+        });
+    }
+
+    // Функция для получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Закрытие модального окна при клике вне его
+    window.onclick = function(event) {
+        const modal = document.getElementById('confirmModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
 </script>
 {% endblock %}

@@ -13,6 +13,7 @@ import os
 from django.conf import settings
 from django.utils import timezone
 import json
+import subprocess
 
 
 class CustomUserManager(BaseUserManager):
@@ -233,6 +234,21 @@ class Hall(models.Model):
 
     def __str__(self):
         return self.name
+
+    def delete(self, *args, **kwargs):
+        """Каскадное удаление всех связанных объектов"""
+        try:
+            # Сначала удаляем все сеансы в этом зале
+            from .models import Screening
+            screenings = Screening.objects.filter(hall=self)
+            for screening in screenings:
+                screening.delete()
+
+            # Места удалятся автоматически благодаря CASCADE
+        except Exception as e:
+            logger.error(f"Error in cascade delete for hall {self.name}: {e}")
+
+        super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         logger.info(f"Сохранение зала {self.name}, новый: {self._state.adding}")
@@ -569,48 +585,24 @@ class TicketStatus(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        # Автоматически устанавливаем статус при первом сохранении
+        # УБИРАЕМ проверку status_id - она здесь не нужна
         is_new = self._state.adding
-
-        if is_new and not self.status_id:
-            try:
-                active_status = TicketStatus.objects.filter(code='active', is_active=True).first()
-                if active_status:
-                    self.status = active_status
-                else:
-                    # Создаем статус по умолчанию, если его нет
-                    active_status = TicketStatus.objects.create(
-                        code='active',
-                        name='Активный',
-                        description='Билет активен и действителен',
-                        is_active=True,
-                        can_be_refunded=True
-                    )
-                    self.status = active_status
-            except Exception as e:
-                logger.error(f"Error setting default ticket status: {e}")
 
         super().save(*args, **kwargs)
 
-        # Логируем покупку билета
+        # Логируем создание статуса
         if is_new:
             try:
                 from .logging_utils import OperationLogger
                 OperationLogger.log_system_operation(
                     action_type='CREATE',
-                    module_type='TICKETS',
-                    description=f'Куплен билет #{self.id} на фильм: {self.screening.movie.title}',
+                    module_type='SYSTEM',
+                    description=f'Создан статус билета: {self.name} ({self.code})',
                     object_id=self.pk,
-                    object_repr=str(self),
-                    additional_data={
-                        'user_email': self.user.email,
-                        'movie': self.screening.movie.title,
-                        'screening_time': self.screening.start_time.strftime('%d.%m.%Y %H:%M'),
-                        'seat': f"Ряд {self.seat.row}, Место {self.seat.number}"
-                    }
+                    object_repr=str(self)
                 )
             except Exception as e:
-                logger.error(f"Error logging ticket purchase: {e}")
+                logger.error(f"Error logging ticket status creation: {e}")
 
     def can_be_downloaded(self, user=None):
         """
@@ -849,6 +841,19 @@ class BackupManager(models.Model):
         ('daily', 'Daily Backup')
     ])
     backup_date = models.DateField(null=True, blank=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+    restoration_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Ожидает'),
+            ('in_progress', 'В процессе'),
+            ('completed', 'Выполнено'),
+            ('failed', 'Ошибка')
+        ],
+        default='pending',
+        verbose_name='Статус восстановления'
+    )
+    restoration_log = models.TextField(blank=True, verbose_name='Лог восстановления')
 
     class Meta:
         verbose_name = "Backup"
@@ -871,6 +876,117 @@ class BackupManager(models.Model):
             size = os.path.getsize(self.get_file_path())
             return f"{size / 1024 / 1024:.2f} MB"
         return "File not found"
+
+    def can_be_restored(self):
+        """Проверить, можно ли восстановить из этого backup"""
+        return self.file_exists() and self.restoration_status != 'in_progress'
+
+    def restore_database(self, user=None):
+        """Восстановить БД из этого backup"""
+        try:
+            if not self.file_exists():
+                self.restoration_status = 'failed'
+                self.restoration_log = "Файл бэкапа не найден"
+                self.save()
+                return False, "Файл бэкапа не найден"
+
+            if self.restoration_status == 'in_progress':
+                return False, "Восстановление уже выполняется"
+
+            # Устанавливаем статус "в процессе"
+            self.restoration_status = 'in_progress'
+            self.restoration_log = f"Начало восстановления в {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            self.save()
+
+            backup_path = self.get_file_path()
+
+            # Используем новый класс для восстановления
+            from .backup_utils import DatabaseRestorer
+
+            # Проверяем подключение к БД
+            connection_ok, stdout, stderr = DatabaseRestorer.test_psql_connection()
+            if not connection_ok:
+                self.restoration_status = 'failed'
+                self.restoration_log = f"Нет подключения к БД: {stderr}"
+                self.save()
+                return False, f"Нет подключения к БД: {stderr}"
+
+            # Выполняем восстановление
+            success, stdout, stderr = DatabaseRestorer.restore_from_backup(backup_path)
+
+            if success:
+                self.restoration_status = 'completed'
+                self.restored_at = timezone.now()
+                self.restoration_log = (
+                    f"✅ Восстановление успешно завершено\n"
+                    f"Время: {self.restored_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    f"Файл: {self.backup_file}\n"
+                    f"Вывод: {stdout[:1000]}"
+                )
+                self.save()
+
+                # Логируем успешное восстановление
+                from .logging_utils import OperationLogger
+                OperationLogger.log_system_operation(
+                    action_type='BACKUP',
+                    module_type='BACKUPS',
+                    description=f'Восстановление БД из backup: {self.name}',
+                    object_id=self.id,
+                    object_repr=str(self)
+                )
+
+                return True, "Восстановление успешно завершено"
+            else:
+                self.restoration_status = 'failed'
+                error_msg = stderr if stderr else "Неизвестная ошибка"
+                self.restoration_log = (
+                    f"❌ Ошибка восстановления\n"
+                    f"Файл: {self.backup_file}\n"
+                    f"Ошибка:\n{error_msg[:2000]}"
+                )
+                self.save()
+
+                # Показываем более подробную ошибку пользователю
+                if "permission denied" in error_msg.lower():
+                    return False, "Ошибка прав доступа к файлу"
+                elif "does not exist" in error_msg.lower():
+                    return False, "Файл не найден"
+                else:
+                    return False, f"Ошибка восстановления: {error_msg[:200]}"
+
+        except Exception as e:
+            self.restoration_status = 'failed'
+            self.restoration_log = f"Исключение при восстановлении: {str(e)}"
+            self.save()
+            return False, f"Ошибка: {str(e)}"
+
+    def get_restoration_status_display(self):
+        """Получить отображаемый статус восстановления"""
+        status_display = dict(self._meta.get_field('restoration_status').choices).get(
+            self.restoration_status, self.restoration_status
+        )
+
+        if self.restoration_status == 'completed' and self.restored_at:
+            return f"{status_display} ({self.restored_at.strftime('%d.%m.%Y %H:%M')})"
+        return status_display
+
+    def get_restoration_color(self):
+        """Получить цвет статуса для отображения"""
+        colors = {
+            'pending': '#888',
+            'in_progress': '#ff9800',
+            'completed': '#4caf50',
+            'failed': '#f44336'
+        }
+        return colors.get(self.restoration_status, '#888')
+
+    def get_download_url(self):
+        """Получить URL для скачивания файла backup"""
+        return f'/backups/{self.backup_file}'
+
+    def get_absolute_path(self):
+        """Получить абсолютный путь к файлу"""
+        return self.get_file_path()
 
 
 # Модель-заглушка для отчетов

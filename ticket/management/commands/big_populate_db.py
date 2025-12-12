@@ -21,11 +21,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.clear_old_data()
         self.create_admin()
-        self.create_ticket_statuses()  # ДОБАВЛЯЕМ СОЗДАНИЕ СТАТУСОВ БИЛЕТОВ
-        genres = self.create_genres()  # создаем жанры первыми
-        age_ratings = self.create_age_ratings()  # создаем возрастные рейтинги
+        self.create_ticket_statuses()
+        genres = self.create_genres()
+        age_ratings = self.create_age_ratings()
         halls = self.create_halls()
-        movies = self.create_movies(genres, age_ratings)  # передаем словари жанров и рейтингов
+        movies = self.create_movies(genres, age_ratings)
         self.create_screenings(halls, movies)
 
         self.stdout.write(self.style.SUCCESS('✅ База успешно заполнена тестовыми данными!'))

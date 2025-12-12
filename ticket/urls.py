@@ -1,7 +1,10 @@
-from django.urls import path
+import os
+
+from django.urls import path, include
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -14,6 +17,7 @@ urlpatterns = [
     path('book/', views.book_tickets, name='book_tickets'),
     path('download-ticket/', views.download_ticket, name='download_ticket'),
     # Админка
+    path('admin/', admin.site.urls),
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin/movies/', views.movie_manage, name='movie_manage'),
     path('admin/movies/add/', views.movie_add, name='movie_add'),
@@ -46,3 +50,4 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static('/backups/', document_root=os.path.join(settings.BASE_DIR, 'backups'))
