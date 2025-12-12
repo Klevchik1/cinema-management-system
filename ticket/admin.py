@@ -73,9 +73,6 @@ class CustomUserAdmin(LoggingModelAdmin, UserAdmin):
     def has_add_permission(self, request):
         return False
 
-    def has_delete_permission(self, request, obj=None):
-        return False
-
 
 @admin.register(Hall)
 class HallAdmin(LoggingModelAdmin):
@@ -344,12 +341,6 @@ class TicketAdmin(LoggingModelAdmin):
     get_status_display.short_description = 'Статус'
 
     def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return True
-
-    def has_delete_permission(self, request, obj=None):
         return False
 
     def process_refunds(self, request, queryset):

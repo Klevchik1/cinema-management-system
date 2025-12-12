@@ -24,35 +24,56 @@ class RegistrationForm(forms.Form):
         label='Email',
         widget=forms.EmailInput(attrs={
             'placeholder': 'example@mail.ru',
-            'class': 'form-control'
+            'class': 'form-control',
+            'data-validate': 'email',
+            'required': True,
+            'autocomplete': 'email'
         })
     )
     name = forms.CharField(
         label='Имя',
         widget=forms.TextInput(attrs={
             'placeholder': 'Иван',
-            'class': 'form-control'
+            'class': 'form-control',
+            'data-validate': 'name',
+            'required': True,
+            'minlength': '2',
+            'maxlength': '30',
+            'autocomplete': 'given-name'
         })
     )
     surname = forms.CharField(
         label='Фамилия',
         widget=forms.TextInput(attrs={
             'placeholder': 'Иванов',
-            'class': 'form-control'
+            'class': 'form-control',
+            'data-validate': 'surname',
+            'required': True,
+            'minlength': '2',
+            'maxlength': '30',
+            'autocomplete': 'family-name'
         })
     )
     number = forms.CharField(
         label='Телефон',
         widget=forms.TextInput(attrs={
             'placeholder': '+7 (999) 999-99-99',
-            'class': 'form-control'
-        })
+            'class': 'form-control',
+            'data-validate': 'phone',
+            'required': True,
+            'autocomplete': 'tel'
+        }),
+        help_text='Формат: +7 (999) 123-45-67'
     )
     password1 = forms.CharField(
         label='Пароль',
         widget=forms.PasswordInput(attrs={
             'placeholder': 'Придумайте пароль',
-            'class': 'form-control'
+            'class': 'form-control',
+            'data-validate': 'password',
+            'required': True,
+            'minlength': '8',
+            'autocomplete': 'new-password'
         }),
         help_text='<ul><li>Пароль должен содержать не менее 8 символов</li><li>Не должен быть слишком простым</li><li>Не должен состоять только из цифр</li></ul>'
     )
@@ -60,7 +81,11 @@ class RegistrationForm(forms.Form):
         label='Подтверждение пароля',
         widget=forms.PasswordInput(attrs={
             'placeholder': 'Повторите пароль',
-            'class': 'form-control'
+            'class': 'form-control',
+            'data-validate': 'confirm',
+            'required': True,
+            'minlength': '8',
+            'autocomplete': 'new-password'
         })
     )
 
