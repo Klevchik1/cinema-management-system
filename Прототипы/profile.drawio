@@ -1,203 +1,176 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0" version="29.2.1">
-  <diagram name="Личный кабинет" id="Личный кабинет">
-    <mxGraphModel dx="1520" dy="877" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0" version="29.2.7">
+  <diagram name="Страница — 1" id="t_NkBBw7C34DsIJPNcIT">
+    <mxGraphModel dx="2246" dy="-350" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="header_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="50" width="700" x="50" y="20" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-764" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="50" width="700" x="-41.66666666666674" y="1445" as="geometry" />
         </mxCell>
-        <mxCell id="logo" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=18;" value="КИНОТЕАТР ПРЕМЬЕРА" vertex="1">
-          <mxGeometry height="30" width="250" x="70" y="27" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-765" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=18;" value="КИНОТЕАТР ПРЕМЬЕРА" vertex="1">
+          <mxGeometry height="30" width="250" x="-21.666666666666742" y="1452" as="geometry" />
         </mxCell>
-        <mxCell id="home_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="На главную" vertex="1">
-          <mxGeometry height="30" width="90" x="410" y="27" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-766" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="На главную" vertex="1">
+          <mxGeometry height="30" width="90" x="318.33333333333326" y="1452" as="geometry" />
         </mxCell>
-        <mxCell id="admin_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Админ-панель" vertex="1">
-          <mxGeometry height="30" width="100" x="510" y="27" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-767" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Админ-панель" vertex="1">
+          <mxGeometry height="30" width="100" x="418.33333333333326" y="1452" as="geometry" />
         </mxCell>
-        <mxCell id="logout_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Выйти" vertex="1">
-          <mxGeometry height="30" width="70" x="620" y="27" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-768" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Выйти" vertex="1">
+          <mxGeometry height="30" width="70" x="528.3333333333333" y="1452" as="geometry" />
         </mxCell>
-        <mxCell id="page_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=32;" value="Личный кабинет" vertex="1">
-          <mxGeometry height="40" width="290" x="255" y="70" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-769" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=32;" value="Личный кабинет" vertex="1">
+          <mxGeometry height="40" width="290" x="163.33333333333326" y="1495" as="geometry" />
         </mxCell>
-        <mxCell id="messages" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Сообщения системы" vertex="1">
-          <mxGeometry height="40" width="600" x="100" y="110" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-770" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Сообщения системы" vertex="1">
+          <mxGeometry height="40" width="600" x="8.333333333333258" y="1535" as="geometry" />
         </mxCell>
-        <mxCell id="main_container" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="746" width="700" x="50" y="160" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-771" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="591" width="700" x="-41.67" y="1585" as="geometry" />
         </mxCell>
-        <mxCell id="left_column" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="716" width="320" x="70" y="180" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-772" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="551" width="320" x="-21.67" y="1605" as="geometry" />
         </mxCell>
-        <mxCell id="right_column" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="716" width="320" x="410" y="180" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-773" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="551" width="320" x="318.33" y="1605" as="geometry" />
         </mxCell>
-        <mxCell id="avatar_container" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="92" width="150" x="155" y="184" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-774" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="92" width="150" x="63.33333333333326" y="1609" as="geometry" />
         </mxCell>
-        <mxCell id="avatar" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;" value="Аватар" vertex="1">
-          <mxGeometry height="80" width="80" x="190" y="190" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-775" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;" value="Аватар" vertex="1">
+          <mxGeometry height="80" width="80" x="98.33333333333326" y="1615" as="geometry" />
         </mxCell>
-        <mxCell id="user_name" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" value="Имя Фамилия" vertex="1">
-          <mxGeometry height="30" width="220" x="120" y="277.5" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-776" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" value="Имя Фамилия" vertex="1">
+          <mxGeometry height="30" width="220" x="28.333333333333258" y="1702.5" as="geometry" />
         </mxCell>
-        <mxCell id="email_section" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="88" width="300" x="80" y="308" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-777" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="88" width="300" x="-11.666666666666742" y="1733" as="geometry" />
         </mxCell>
-        <mxCell id="email_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Смена email" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="313" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-778" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Смена email" vertex="1">
+          <mxGeometry height="20" width="100" x="-1.6666666666667425" y="1738" as="geometry" />
         </mxCell>
-        <mxCell id="current_email" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Текущий email: user@example.com" vertex="1">
-          <mxGeometry height="20" width="280" x="90" y="334" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-779" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Текущий email: user@example.com" vertex="1">
+          <mxGeometry height="20" width="280" x="-1.6666666666667425" y="1759" as="geometry" />
         </mxCell>
-        <mxCell id="new_email_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="200" x="90" y="356" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-780" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="200" x="-1.6666666666667425" y="1781" as="geometry" />
         </mxCell>
-        <mxCell id="change_email_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Запросить смену" vertex="1">
-          <mxGeometry height="25" width="70" x="300" y="356" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-781" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Запросить смену" vertex="1">
+          <mxGeometry height="25" width="70" x="208.33333333333326" y="1781" as="geometry" />
         </mxCell>
-        <mxCell id="profile_form" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="153" width="300" x="80" y="403" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-782" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="153" width="300" x="-11.666666666666742" y="1828" as="geometry" />
         </mxCell>
-        <mxCell id="name_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Имя" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="408" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-783" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Имя" vertex="1">
+          <mxGeometry height="20" width="100" x="-1.6666666666667425" y="1833" as="geometry" />
         </mxCell>
-        <mxCell id="name_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="280" x="90" y="428" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-784" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="280" x="-1.6666666666667425" y="1853" as="geometry" />
         </mxCell>
-        <mxCell id="surname_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Фамилия" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="455" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-785" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Фамилия" vertex="1">
+          <mxGeometry height="20" width="100" x="-1.6666666666667425" y="1880" as="geometry" />
         </mxCell>
-        <mxCell id="surname_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="280" x="90" y="474" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-786" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="280" x="-1.6666666666667425" y="1899" as="geometry" />
         </mxCell>
-        <mxCell id="phone_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Телефон" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="501" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-787" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Телефон" vertex="1">
+          <mxGeometry height="20" width="100" x="-1.6666666666667425" y="1926" as="geometry" />
         </mxCell>
-        <mxCell id="phone_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="280" x="90" y="521" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-788" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="25" width="280" x="-1.6666666666667425" y="1946" as="geometry" />
         </mxCell>
-        <mxCell id="save_profile_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;fontSize=14;fontStyle=1;" value="Сохранить изменения" vertex="1">
-          <mxGeometry height="35" width="220" x="120" y="565" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-789" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;fontSize=14;fontStyle=1;" value="Сохранить изменения" vertex="1">
+          <mxGeometry height="35" width="220" x="28.333333333333258" y="1990" as="geometry" />
         </mxCell>
-        <mxCell id="password_section" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="193" width="300" x="80" y="603" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-799" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=18;" value="История покупок" vertex="1">
+          <mxGeometry height="30" width="200" x="338.33333333333326" y="1625" as="geometry" />
         </mxCell>
-        <mxCell id="password_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Смена пароля" vertex="1">
-          <mxGeometry height="20" width="120" x="160" y="610" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-800" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="180" width="300" x="328.33333333333326" y="1665" as="geometry" />
         </mxCell>
-        <mxCell id="old_pass_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Текущий пароль" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="627" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-801" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="60" width="280" x="338.33333333333326" y="1675" as="geometry" />
         </mxCell>
-        <mxCell id="old_pass_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="250" x="90" y="644" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-802" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Постер" vertex="1">
+          <mxGeometry height="40" width="50" x="348.33333333333326" y="1685" as="geometry" />
         </mxCell>
-        <mxCell id="new_pass_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Новый пароль" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="668" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-803" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Название фильма 1" vertex="1">
+          <mxGeometry height="20" width="150" x="408.33333333333326" y="1685" as="geometry" />
         </mxCell>
-        <mxCell id="new_pass_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="250" x="90" y="684" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-804" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Группа из 2 билетов" vertex="1">
+          <mxGeometry height="15" width="150" x="408.33333333333326" y="1710" as="geometry" />
         </mxCell>
-        <mxCell id="confirm_pass_label" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Подтверждение" vertex="1">
-          <mxGeometry height="20" width="100" x="90" y="710" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-805" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Скачать билеты" vertex="1">
+          <mxGeometry height="40" width="40" x="558.3333333333333" y="1685" as="geometry" />
         </mxCell>
-        <mxCell id="confirm_pass_field" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="25" width="250" x="90" y="727" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-806" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="90" width="280" x="338.33333333333326" y="1745" as="geometry" />
         </mxCell>
-        <mxCell id="change_pass_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=2;fontSize=14;fontStyle=1;" value="Сменить пароль" vertex="1">
-          <mxGeometry height="30" width="180" x="130" y="756" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-807" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Дата покупки: 01.01.2024" vertex="1">
+          <mxGeometry height="20" width="130" x="348.33333333333326" y="1755" as="geometry" />
         </mxCell>
-        <mxCell id="tickets_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=18;" value="История покупок" vertex="1">
-          <mxGeometry height="30" width="200" x="430" y="200" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-808" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Сеанс: 01.01.2024 18:00" vertex="1">
+          <mxGeometry height="20" width="130" x="348.33333333333326" y="1780" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_card1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="180" width="300" x="420" y="240" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-809" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Зал: Красный" vertex="1">
+          <mxGeometry height="20" width="130" x="348.33333333333326" y="1805" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_header1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="60" width="280" x="430" y="250" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-810" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Места: Ряд 3, Места 4,5" vertex="1">
+          <mxGeometry height="20" width="130" x="498.33333333333326" y="1755" as="geometry" />
         </mxCell>
-        <mxCell id="movie_poster1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Постер" vertex="1">
-          <mxGeometry height="40" width="50" x="440" y="260" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-811" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Стоимость: 1000 ₽" vertex="1">
+          <mxGeometry height="20" width="130" x="498.33333333333326" y="1780" as="geometry" />
         </mxCell>
-        <mxCell id="movie_title1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Название фильма 1" vertex="1">
-          <mxGeometry height="20" width="150" x="500" y="260" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-812" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="180" width="300" x="328.33333333333326" y="1865" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_count1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Группа из 2 билетов" vertex="1">
-          <mxGeometry height="15" width="150" x="500" y="285" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-813" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="60" width="280" x="338.33333333333326" y="1875" as="geometry" />
         </mxCell>
-        <mxCell id="download_btn1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Скачать билеты" vertex="1">
-          <mxGeometry height="40" width="40" x="650" y="260" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-814" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Постер" vertex="1">
+          <mxGeometry height="40" width="50" x="348.33333333333326" y="1885" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_info1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="90" width="280" x="430" y="320" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-815" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Название фильма 2" vertex="1">
+          <mxGeometry height="20" width="150" x="408.33333333333326" y="1885" as="geometry" />
         </mxCell>
-        <mxCell id="purchase_date1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Дата покупки: 01.01.2024" vertex="1">
-          <mxGeometry height="20" width="130" x="440" y="330" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-816" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Группа из 1 билет" vertex="1">
+          <mxGeometry height="15" width="150" x="408.33333333333326" y="1910" as="geometry" />
         </mxCell>
-        <mxCell id="screening_time1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Сеанс: 01.01.2024 18:00" vertex="1">
-          <mxGeometry height="20" width="130" x="440" y="355" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-817" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Скачать билеты" vertex="1">
+          <mxGeometry height="40" width="40" x="558.3333333333333" y="1885" as="geometry" />
         </mxCell>
-        <mxCell id="hall1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Зал: Красный" vertex="1">
-          <mxGeometry height="20" width="130" x="440" y="380" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-818" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="90" width="280" x="338.33333333333326" y="1945" as="geometry" />
         </mxCell>
-        <mxCell id="seats1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Места: Ряд 3, Места 4,5" vertex="1">
-          <mxGeometry height="20" width="130" x="590" y="330" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-819" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Дата покупки: 15.12.2023" vertex="1">
+          <mxGeometry height="20" width="130" x="348.33333333333326" y="1955" as="geometry" />
         </mxCell>
-        <mxCell id="price1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Стоимость: 1000 ₽" vertex="1">
-          <mxGeometry height="20" width="130" x="590" y="355" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-820" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Сеанс: 15.12.2023 20:30" vertex="1">
+          <mxGeometry height="20" width="130" x="348.33333333333326" y="1980" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_card2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="180" width="300" x="420" y="440" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-821" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Зал: Синий" vertex="1">
+          <mxGeometry height="20" width="130" x="348.33333333333326" y="2005" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_header2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="60" width="280" x="430" y="450" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-822" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Место: Ряд 5, Место 8" vertex="1">
+          <mxGeometry height="20" width="130" x="498.33333333333326" y="1955" as="geometry" />
         </mxCell>
-        <mxCell id="movie_poster2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1;dashed=1;" value="Постер" vertex="1">
-          <mxGeometry height="40" width="50" x="440" y="460" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-823" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Стоимость: 500 ₽" vertex="1">
+          <mxGeometry height="20" width="130" x="498.33333333333326" y="1980" as="geometry" />
         </mxCell>
-        <mxCell id="movie_title2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Название фильма 2" vertex="1">
-          <mxGeometry height="20" width="150" x="500" y="460" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-824" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Нет купленных билетов" vertex="1">
+          <mxGeometry height="30" width="150" x="408.33333333333326" y="2065" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_count2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Группа из 1 билет" vertex="1">
-          <mxGeometry height="15" width="150" x="500" y="485" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-825" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry height="85" width="300" x="-11.666666666666742" y="2045" as="geometry" />
         </mxCell>
-        <mxCell id="download_btn2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Скачать билеты" vertex="1">
-          <mxGeometry height="40" width="40" x="650" y="460" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-826" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Telegram Уведомления" vertex="1">
+          <mxGeometry height="20" width="150" x="-1.6666666666667425" y="2055" as="geometry" />
         </mxCell>
-        <mxCell id="ticket_info2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=1;" value="" vertex="1">
-          <mxGeometry height="90" width="280" x="430" y="520" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-827" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Telegram привязан" vertex="1">
+          <mxGeometry height="20" width="280" x="-1.6666666666667425" y="2080" as="geometry" />
         </mxCell>
-        <mxCell id="purchase_date2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Дата покупки: 15.12.2023" vertex="1">
-          <mxGeometry height="20" width="130" x="440" y="530" as="geometry" />
-        </mxCell>
-        <mxCell id="screening_time2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Сеанс: 15.12.2023 20:30" vertex="1">
-          <mxGeometry height="20" width="130" x="440" y="555" as="geometry" />
-        </mxCell>
-        <mxCell id="hall2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Зал: Синий" vertex="1">
-          <mxGeometry height="20" width="130" x="440" y="580" as="geometry" />
-        </mxCell>
-        <mxCell id="seats2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Место: Ряд 5, Место 8" vertex="1">
-          <mxGeometry height="20" width="130" x="590" y="530" as="geometry" />
-        </mxCell>
-        <mxCell id="price2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" value="Стоимость: 500 ₽" vertex="1">
-          <mxGeometry height="20" width="130" x="590" y="555" as="geometry" />
-        </mxCell>
-        <mxCell id="no_tickets" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Нет купленных билетов" vertex="1">
-          <mxGeometry height="30" width="150" x="500" y="640" as="geometry" />
-        </mxCell>
-        <mxCell id="telegram_section" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
-          <mxGeometry height="85" width="300" x="80" y="801" as="geometry" />
-        </mxCell>
-        <mxCell id="telegram_title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" value="Telegram Уведомления" vertex="1">
-          <mxGeometry height="20" width="150" x="90" y="811" as="geometry" />
-        </mxCell>
-        <mxCell id="telegram_status" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" value="Telegram привязан" vertex="1">
-          <mxGeometry height="20" width="280" x="90" y="836" as="geometry" />
-        </mxCell>
-        <mxCell id="telegram_btn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Управление Telegram" vertex="1">
-          <mxGeometry height="25" width="160" x="150" y="856" as="geometry" />
+        <mxCell id="OoK8AK8UoUXDYh9TZxu9-828" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#000000;strokeWidth=1;fontSize=12;" value="Управление Telegram" vertex="1">
+          <mxGeometry height="25" width="160" x="58.33333333333326" y="2100" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
